@@ -35,7 +35,7 @@ bool Rom::load() {
 }
 
 bool Rom::save() {
-	file.open("gold.gbc", std::ios::out | std::ios::binary);	
+	file.open("gold randomized.gbc", std::ios::out | std::ios::binary);	
 	if (!file.is_open()) return false;
 	//Standard says vector is contiguous memory, get the start address of the vector and write it to the file
 	file.write((char*) &rom[0], sizeof(uint8_t) * rom.size());
