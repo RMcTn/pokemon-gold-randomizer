@@ -31,7 +31,7 @@ void Rom::randomize_starters() {
 		{0x180150, 0x180152, 0x180169, 0x180174}};		//Chikorita
 	unsigned int const STARTER_TEXT_POSITIONS[] = {0x1805F4, 0x180620, 0x18064D};
 	for (int i = 0; i < 3; i++) {
-		uint8_t pokemonID = std::rand() % UINT8_MAX;
+		uint8_t pokemonID = std::rand() % number_of_pokemon;
 		for (unsigned int position : STARTER_POSITIONS[i]) {
 			rom[position] = pokemonID;
 		}	
