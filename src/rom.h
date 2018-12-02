@@ -10,6 +10,7 @@ public:
 	Rom();
 	Rom(int seed);
 	void randomize_starters();
+	void randomize_intro_pokemon();
 	bool load();
 	bool save();
 	void run();	//Just a driver function whilst functionality is being built

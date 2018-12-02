@@ -33,12 +33,23 @@ void Rom::randomize_starters() {
 	for (int i = 0; i < 3; i++) {
 		uint8_t pokemonID = std::rand() % number_of_pokemon;
 		for (unsigned int position : STARTER_POSITIONS[i]) {
+			//TODO: Noticed a weird sprite when unown was picked. Look into it
 			rom[position] = pokemonID;
 		}	
 		Pokemon poke = pokemon[pokemonID - 1];
 		//TODO: Maybe print pokemon's type here like it does in the game
 		write_string(STARTER_TEXT_POSITIONS[i], poke.get_name() += "?", true);
 	}
+
+}
+
+void Rom::randomize_intro_pokemon() {
+	
+		uint8_t pokemonID = std::rand() % number_of_pokemon;
+		const int INTRO_POKEMON_POSITION = 0x5FDE;
+		const int INTRO_POKEMON_CRY_POSITION = 0X6061;
+		rom[INTRO_POKEMON_POSITION] = pokemonID;
+		rom[INTRO_POKEMON_CRY_POSITION] = pokemonID;
 
 }
 
