@@ -2,12 +2,15 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <exception>
 #include <iostream>
+#include <sstream>
 
 Rom::Rom() {
 }
 
 void Rom::run() {
+	populate_character_mapping();
 	populate_pokemon();
 	return;
 }
@@ -65,6 +68,8 @@ std::vector<std::string> Rom::load_pokemon_names() {
 	return names;	
 }
 
+
+
 std::string Rom::read_pokemon_name(unsigned int offset, unsigned int length) {
 	std::string name;
 	for (unsigned int i = 0; i < length; i++) {
@@ -87,5 +92,34 @@ void Rom::write_string(unsigned int offset, unsigned int length, std::string tex
 	//TODO: This crashes if it writes sandshrew's name
 	for (unsigned int i = 0; i < length; i++) {
 		rom[offset + i] = text[i];
+	}
+}
+
+void Rom::populate_character_mapping() {
+	std::ifstream map_file("mappings/gen2_english", std::ios::in);
+	if (!map_file.is_open()) {
+		std::cout << "Could not open gen2_english file\n";
+		exit(EXIT_FAILURE);
+	}
+	uint8_t character;
+	std::string hex_encoding;
+	int line = 1;
+	while (map_file >> character >> hex_encoding) {
+		try {
+			int hex_value = std::stoi(hex_encoding, nullptr, 16);
+			if (hex_value > UINT8_MAX) {
+				std::ostringstream err_msg;
+				err_msg << "Hex value in gen2_english at line " << line << " is too large. Max is " << UINT8_MAX;
+				throw std::out_of_range(err_msg.str());
+			}
+			character_mapping.insert(std::pair<uint8_t, int>(character, hex_value));
+		} catch (std::invalid_argument& e) {
+			std::cout << "Invalid hex value in gen2_english file at line " << line << "\n";
+			std::cout << "No randomization will take place\n";
+			exit(EXIT_FAILURE);
+		} catch (std::out_of_range& e) {
+			std::cout << e.what() << "\n";
+			exit(EXIT_FAILURE);
+		}
 	}
 }
