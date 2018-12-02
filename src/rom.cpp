@@ -5,8 +5,16 @@
 #include <exception>
 #include <iostream>
 #include <sstream>
+#include <ctime>
 
 Rom::Rom() {
+	seed = std::time(nullptr);	
+	std::srand(seed);		
+}
+
+Rom::Rom(int seed) {
+	this->seed = seed;
+	std::srand(seed);		
 }
 
 void Rom::run() {
@@ -15,8 +23,7 @@ void Rom::run() {
 	return;
 }
 
-void Rom::randomize_starters(int seed /*=0*/) {
-	std::srand(seed);		
+void Rom::randomize_starters() {
 	//Starter positons in memory for pokemon Gold
 	unsigned int const STARTER_POSITIONS[3][4] = {
 		{0x1800D2, 0x1800D4, 0x1800EB, 0x1800F6},		//Cyndaquil

@@ -8,12 +8,14 @@ class Rom {
 
 public:
 	Rom();
-	void randomize_starters(int seed = 0);
+	Rom(int seed);
+	void randomize_starters();
 	bool load();
 	bool save();
 	void run();	//Just a driver function whilst functionality is being built
 
 private:
+	int seed;
 	std::fstream file;
 	std::vector<uint8_t> rom;
 	//Mapping of english characters to the characters used in gen2 (no unordinary characters for now)
