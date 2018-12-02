@@ -29,7 +29,8 @@ void Rom::randomize_starters(int seed /*=0*/) {
 			rom[position] = pokemonID;
 		}	
 		Pokemon poke = pokemon[pokemonID - 1];
-		write_string(STARTER_TEXT_POSITIONS[i], 10, poke.get_name());
+		//TODO: Maybe print pokemon's type here like it does in the game
+		write_string(STARTER_TEXT_POSITIONS[i], poke.get_name() += "?", true);
 	}
 
 }
@@ -43,6 +44,7 @@ bool Rom::load() {
 	file.seekg(0, std::ios::beg);
 	//TODO: Ensure file length is correct
 	rom.insert(rom.begin(), std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+	
 	file.close();
 	load_pokemon_names();
 	return true;
@@ -74,6 +76,8 @@ std::string Rom::read_pokemon_name(unsigned int offset, unsigned int length) {
 	std::string name;
 	for (unsigned int i = 0; i < length; i++) {
 		uint8_t curr_char = rom[offset + i];
+		if (curr_char == GB_STRING_TERMINATOR)
+			break;
 		name.push_back(curr_char);
 	}	
 	return name;
@@ -87,11 +91,17 @@ void Rom::populate_pokemon() {
 	}
 }
 
-void Rom::write_string(unsigned int offset, unsigned int length, std::string text) {
+void Rom::write_string(unsigned int offset, std::string text, bool add_terminator /*=false*/) {
 	//Seems to be a problem with max length strings, that is doesn't stop them
 	//TODO: This crashes if it writes sandshrew's name
-	for (unsigned int i = 0; i < length; i++) {
-		rom[offset + i] = text[i];
+	std::string translated = translate_string_to_game(text);
+	int i = 0;
+	for (uint8_t ch : translated) {
+		rom[offset + i] = ch;
+		i++;
+	}
+	if (add_terminator) {
+		rom[offset + i] = GB_END_OF_TEXT;
 	}
 }
 
@@ -122,4 +132,19 @@ void Rom::populate_character_mapping() {
 			exit(EXIT_FAILURE);
 		}
 	}
+}
+
+std::string Rom::translate_string_to_game(const std::string text) {
+	std::string translated;		//Maybe this should be a vector of chars or something instead
+	for (uint8_t ch : text) {
+		auto element = character_mapping.find(ch);
+		if (element == character_mapping.end()) {
+			//No conversion, just add the character
+			translated.push_back(ch);
+			continue;
+		}
+
+		translated.push_back(element->second);
+	}
+	return translated;
 }
