@@ -166,3 +166,35 @@ std::string Rom::translate_string_to_game(const std::string text) {
 	}
 	return translated;
 }
+
+void Rom::randomize_land_encounters() {
+	std::srand(seed);
+	//TODO: Add option to keep randomization across time cycles
+	//Gen 2 has morning, day and night cycles, need to randomize all 3 for each area
+	const int land_offset = 0x2AB35;
+	int offset = land_offset;
+	//land mapping ends at 0x2B667. 0x2B668 is 0xFF, so this is where we stop
+	while (rom[offset] != 0xFF) {
+		//First 5 bytes of each area seems to just be information we don't need to use. These bytes can be skipped for each area, unless they are logged for randomization output file
+		const int info_offset = 5;
+		//Each entry for the pokemon in an area is two bytes: 1st byte is the level of the pokemon, 2nd byte is the pokemon ID
+		const int level_offset = 1;
+		const int pokemon_bytes = 2;
+		const int land_encounters_number = 7;
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < land_encounters_number; j++) {
+				int time_of_day_offset = i * land_encounters_number * 2;
+				//Multiply by two here since each pokemon entry is two bytes (see above)
+				int pokemon_offset = j * 2;
+				uint8_t pokemonID = std::rand() % number_of_pokemon;
+				rom[offset + info_offset + time_of_day_offset + pokemon_offset + level_offset] = pokemonID;
+
+			}
+		}
+		//pokemon_bytes * 3 is the size of each pokemon entry, multiplied by the number of time states (morning, day, night)
+		//Then multiplied further by the amount of encounters there can be
+		const int area_bytes = info_offset + ((pokemon_bytes * 3) * land_encounters_number);
+		offset += area_bytes;
+	}
+}
+

@@ -6,5 +6,6 @@ int main() {
 	rom.run();
 	rom.randomize_intro_pokemon();
 	rom.randomize_starters();
+	rom.randomize_land_encounters();
 	rom.save();
 }
