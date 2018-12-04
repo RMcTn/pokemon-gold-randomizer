@@ -198,3 +198,27 @@ void Rom::randomize_land_encounters() {
 	}
 }
 
+void Rom::randomize_water_encounters() {
+	std::srand(seed);
+	//TODO: Refactor this with other area encounter randomizes, a lot of similar code
+	const int water_offset = 0x2B669;
+	int offset = water_offset;
+	while (rom[offset] != 0xFF) {
+		const int water_encounters_number = 3;
+		const int info_offset = 3;
+		//Each entry for the pokemon in an area is two bytes: 1st byte is the level of the pokemon, 2nd byte is the pokemon ID
+		const int level_offset = 1;
+		const int pokemon_bytes = 2;
+		for (int j = 0; j < water_encounters_number; j++) {
+			//Multiply by two here since each pokemon entry is two bytes (see above)
+			int pokemon_offset = j * 2;
+			uint8_t pokemonID = std::rand() % number_of_pokemon;
+			rom[offset + info_offset + pokemon_offset + level_offset] = pokemonID;
+
+		}
+
+		const int area_bytes = info_offset + (pokemon_bytes * water_encounters_number);
+		offset += area_bytes;
+	}
+}
+

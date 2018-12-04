@@ -12,6 +12,7 @@ public:
 	void randomize_starters();
 	void randomize_intro_pokemon();
 	void randomize_land_encounters();
+	void randomize_water_encounters();
 	bool load();
 	bool save();
 	void run();	//Just a driver function whilst functionality is being built
