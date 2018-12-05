@@ -222,3 +222,21 @@ void Rom::randomize_water_encounters() {
 	}
 }
 
+void Rom::randomize_fishing_encounters() {
+	std::srand(seed);
+	const int fishing_offset = 0x92A52;
+	//First pokemon id first after this offset
+	//Byte format goes:
+	//pokemon id, level, something(?)
+	int offset = fishing_offset + 1;
+	const int fishing_group_count = 12;
+	for (int i = 0; i < fishing_group_count; i++) {
+		const int pokemon_per_fishing_group = 11;
+		for (int j = 0; j < pokemon_per_fishing_group; j++) {
+			uint8_t pokemonID = std::rand() % number_of_pokemon;
+			rom[offset] = pokemonID;
+			//+2 to pass over level and extra byte
+			offset += 2;
+		}
+	}
+}

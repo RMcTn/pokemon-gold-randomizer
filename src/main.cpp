@@ -8,5 +8,6 @@ int main() {
 	rom.randomize_starters();
 	rom.randomize_land_encounters();
 	rom.randomize_water_encounters();
+	rom.randomize_fishing_encounters();
 	rom.save();
 }
