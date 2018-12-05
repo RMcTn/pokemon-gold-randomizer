@@ -20,6 +20,14 @@ Rom::Rom(int seed) {
 void Rom::run() {
 	populate_character_mapping();
 	populate_pokemon();
+	randomize_intro_pokemon();
+	randomize_starters();
+
+	randomize_land_encounters(land_offset_johto);
+	randomize_land_encounters(land_offset_kanto);
+	randomize_water_encounters(water_offset_johto);
+	randomize_water_encounters(water_offset_kanto);
+	randomize_fishing_encounters();
 	return;
 }
 
@@ -167,13 +175,11 @@ std::string Rom::translate_string_to_game(const std::string text) {
 	return translated;
 }
 
-void Rom::randomize_land_encounters() {
+void Rom::randomize_land_encounters(int offset) {
 	std::srand(seed);
 	//TODO: Add option to keep randomization across time cycles
 	//Gen 2 has morning, day and night cycles, need to randomize all 3 for each area
-	const int land_offset = 0x2AB35;
-	int offset = land_offset;
-	//land mapping ends at 0x2B667. 0x2B668 is 0xFF, so this is where we stop
+	//Map sections seem to end at 0xFF
 	while (rom[offset] != 0xFF) {
 		//First 5 bytes of each area seems to just be information we don't need to use. These bytes can be skipped for each area, unless they are logged for randomization output file
 		const int info_offset = 5;
@@ -198,11 +204,9 @@ void Rom::randomize_land_encounters() {
 	}
 }
 
-void Rom::randomize_water_encounters() {
+void Rom::randomize_water_encounters(int offset) {
 	std::srand(seed);
 	//TODO: Refactor this with other area encounter randomizes, a lot of similar code
-	const int water_offset = 0x2B669;
-	int offset = water_offset;
 	while (rom[offset] != 0xFF) {
 		const int water_encounters_number = 3;
 		const int info_offset = 3;
@@ -223,6 +227,7 @@ void Rom::randomize_water_encounters() {
 }
 
 void Rom::randomize_fishing_encounters() {
+	//TODO: Need to test this in Kanto
 	std::srand(seed);
 	const int fishing_offset = 0x92A52;
 	//First pokemon id first after this offset

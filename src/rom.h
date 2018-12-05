@@ -11,14 +11,19 @@ public:
 	Rom(int seed);
 	void randomize_starters();
 	void randomize_intro_pokemon();
-	void randomize_land_encounters();
-	void randomize_water_encounters();
+	void randomize_land_encounters(int offset);
+	void randomize_water_encounters(int offset);
 	void randomize_fishing_encounters();
 	bool load();
 	bool save();
 	void run();	//Just a driver function whilst functionality is being built
 
 private:
+	const int land_offset_johto = 0x2AB35;
+	const int land_offset_kanto = 0x2B7C0;
+	const int water_offset_johto = 0x2B669;
+	const int water_offset_kanto = 0x2BD43;
+
 	int seed;
 	std::fstream file;
 	std::vector<uint8_t> rom;
