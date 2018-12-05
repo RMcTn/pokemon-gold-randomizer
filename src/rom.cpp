@@ -91,22 +91,9 @@ std::vector<std::string> Rom::load_pokemon_names() {
 	std::vector<std::string> names;
 	std::vector<uint8_t> characters;
 	for (unsigned int i = 0; i < number_of_pokemon; i++) {
-		names.push_back(read_pokemon_name(NAMES_OFFSET + (i * NAMES_LENGTH), NAMES_LENGTH));
+		names.push_back(read_string(NAMES_OFFSET + (i * NAMES_LENGTH), NAMES_LENGTH));
 	}
 	return names;	
-}
-
-
-
-std::string Rom::read_pokemon_name(unsigned int offset, unsigned int length) {
-	std::string name;
-	for (unsigned int i = 0; i < length; i++) {
-		uint8_t curr_char = rom[offset + i];
-		if (curr_char == GB_STRING_TERMINATOR)
-			break;
-		name.push_back(curr_char);
-	}	
-	return name;
 }
 
 void Rom::populate_pokemon() {
@@ -118,8 +105,6 @@ void Rom::populate_pokemon() {
 }
 
 void Rom::write_string(unsigned int offset, std::string text, bool add_terminator /*=false*/) {
-	//Seems to be a problem with max length strings, that is doesn't stop them
-	//TODO: This crashes if it writes sandshrew's name
 	std::string translated = translate_string_to_game(text);
 	int i = 0;
 	for (uint8_t ch : translated) {
@@ -228,6 +213,7 @@ void Rom::randomize_water_encounters(int offset) {
 
 void Rom::randomize_fishing_encounters() {
 	//TODO: Need to test this in Kanto
+	//TODO: Check if fishing has time cycle differences
 	std::srand(seed);
 	const int fishing_offset = 0x92A52;
 	//First pokemon id first after this offset
@@ -244,4 +230,17 @@ void Rom::randomize_fishing_encounters() {
 			offset += 2;
 		}
 	}
+}
+
+std::string Rom::read_string(int offset, int length) {
+	std::string line;
+	uint8_t ch;
+	for (int i = 0; i < length; i++) {
+		ch = rom[offset + i];
+		if (ch == GB_STRING_TERMINATOR) {
+			break;
+		}
+		line.push_back(ch);
+	}
+	return line;
 }

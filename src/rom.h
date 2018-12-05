@@ -33,12 +33,13 @@ private:
 	const uint8_t GB_END_OF_TEXT = 0x57;
 	const uint8_t GB_STRING_TERMINATOR = 0x50;
 	std::vector<std::string> load_pokemon_names();
-	std::string read_pokemon_name(unsigned int offset, unsigned int length);
 	void write_string(unsigned int offset, std::string text, bool add_terminator = false);
 	std::vector<Pokemon> pokemon;
 	void populate_pokemon();
 	void populate_character_mapping();
 	std::string translate_string_from_game(const std::string text);
 	std::string translate_string_to_game(const std::string text);
+	std::string read_string(int offset, int length);
+
 
 };
