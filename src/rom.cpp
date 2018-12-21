@@ -20,14 +20,15 @@ Rom::Rom(int seed) {
 void Rom::run() {
 	populate_character_mapping();
 	populate_pokemon();
+
 	randomize_intro_pokemon();
 	randomize_starters();
-
 	randomize_land_encounters(land_offset_johto);
 	randomize_land_encounters(land_offset_kanto);
 	randomize_water_encounters(water_offset_johto);
 	randomize_water_encounters(water_offset_kanto);
 	randomize_fishing_encounters();
+	randomize_trainers();
 	return;
 }
 
@@ -244,3 +245,59 @@ std::string Rom::read_string(int offset, int length) {
 	}
 	return line;
 }
+
+void Rom::randomize_trainers() {
+	std::srand(seed);
+
+	//Trainer groups at this pointer. 2 bytes for each group
+	const int trainer_classes_offset = 0x3993E;
+	const int trainer_class_number = 0x42;
+
+	std::vector<int> trainer_class_offsets;
+	const int gameboy_bank_size = 0x4000;
+	const int memory_bank = trainer_classes_offset / gameboy_bank_size;
+	const int trainer_base_offset = memory_bank * gameboy_bank_size;
+	for (int i = 0; i < trainer_class_number; i++) {
+
+		int trainer_class_offset_from_base = (rom[trainer_classes_offset + i * 2 + 1] << 8) | rom[trainer_classes_offset + i * 2];
+		int trainer_class_offset = (trainer_class_offset_from_base % gameboy_bank_size) + trainer_base_offset;
+		trainer_class_offsets.push_back(trainer_class_offset);
+	}
+
+	//Number of trainers in each class
+	const int trainer_class_amounts[] = {1, 1, 1, 1, 1, 1, 1, 1, 15, 0, 1, 3, 1, 1, 1, 1, 1, 1, 1, 5, 1, 12, 18, 19, 15, 1, 19, 20, 16, 13, 31, 5, 2, 3, 1, 14, 22, 21, 19, 12, 12, 6, 2, 20, 9, 1, 3, 8, 5, 9, 4, 12, 21, 19, 2, 9, 7, 3, 12, 6, 8, 5, 1, 1, 2, 5};
+	for (int i = 0; i < trainer_class_number; i++) {
+		int offset = trainer_class_offsets[i];
+		int limit = trainer_class_amounts[i];
+		for (int trainer_num = 0; trainer_num < limit; trainer_num++) {
+			std::string name = read_string(offset, UINT8_MAX);	//Just using UINT8_MAX as a length isn't needed. Maybe have a read function that doesn't need a length?
+			offset += name.length() + 1;	//Include terminating character in offset change
+			//Need to check custom move marker. See https://bulbapedia.bulbagarden.net/wiki/Trainer_data_structure_in_Generation_II
+			bool has_custom_moves = rom[offset] & 1;
+			bool has_custom_held_item = rom[offset] & 2;
+			offset++;
+			//0xFF is end of the trainer
+			while (rom[offset] != 0xFF) {
+				//Level at rom[offset], pokemonID at rom[offset + 1]
+				int new_id = std::rand() % number_of_pokemon;
+				rom[offset + 1] = new_id;
+				offset += 2;
+
+				if (has_custom_held_item) {
+					//TODO: Randomize held item
+					offset++;
+				}
+
+				if (has_custom_moves) {
+					//TODO: Randomize moves
+					//1 byte per move
+					offset += 4;
+
+				}
+
+			}
+		}
+
+	}
+}
+

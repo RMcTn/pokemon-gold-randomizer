@@ -5,6 +5,7 @@
 #include <map>
 
 class Rom {
+	//TODO: Need to randomize headbutt pokemon
 
 public:
 	Rom();
@@ -14,6 +15,7 @@ public:
 	void randomize_land_encounters(int offset);
 	void randomize_water_encounters(int offset);
 	void randomize_fishing_encounters();
+	void randomize_trainers();
 	bool load();
 	bool save();
 	void run();	//Just a driver function whilst functionality is being built
@@ -40,6 +42,4 @@ private:
 	std::string translate_string_from_game(const std::string text);
 	std::string translate_string_to_game(const std::string text);
 	std::string read_string(int offset, int length);
-
-
 };
