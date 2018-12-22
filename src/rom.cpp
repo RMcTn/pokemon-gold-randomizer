@@ -249,25 +249,13 @@ std::string Rom::read_string(int offset, int length) {
 void Rom::randomize_trainers() {
 	std::srand(seed);
 
-	//Trainer groups at this pointer. 2 bytes for each group
-	const int trainer_classes_offset = 0x3993E;
 	const int trainer_class_number = 0x42;
 
-	std::vector<int> trainer_class_offsets;
-	const int gameboy_bank_size = 0x4000;
-	const int memory_bank = trainer_classes_offset / gameboy_bank_size;
-	const int trainer_base_offset = memory_bank * gameboy_bank_size;
-	for (int i = 0; i < trainer_class_number; i++) {
-
-		int trainer_class_offset_from_base = (rom[trainer_classes_offset + i * 2 + 1] << 8) | rom[trainer_classes_offset + i * 2];
-		int trainer_class_offset = (trainer_class_offset_from_base % gameboy_bank_size) + trainer_base_offset;
-		trainer_class_offsets.push_back(trainer_class_offset);
-	}
-
+	const int trainer_offset = 0x399C2;
+	int offset = trainer_offset;
 	//Number of trainers in each class
 	const int trainer_class_amounts[] = {1, 1, 1, 1, 1, 1, 1, 1, 15, 0, 1, 3, 1, 1, 1, 1, 1, 1, 1, 5, 1, 12, 18, 19, 15, 1, 19, 20, 16, 13, 31, 5, 2, 3, 1, 14, 22, 21, 19, 12, 12, 6, 2, 20, 9, 1, 3, 8, 5, 9, 4, 12, 21, 19, 2, 9, 7, 3, 12, 6, 8, 5, 1, 1, 2, 5};
 	for (int i = 0; i < trainer_class_number; i++) {
-		int offset = trainer_class_offsets[i];
 		int limit = trainer_class_amounts[i];
 		for (int trainer_num = 0; trainer_num < limit; trainer_num++) {
 			std::string name = read_string(offset, UINT8_MAX);	//Just using UINT8_MAX as a length isn't needed. Maybe have a read function that doesn't need a length?
