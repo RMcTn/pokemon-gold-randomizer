@@ -29,6 +29,7 @@ void Rom::run() {
 	randomize_water_encounters(water_offset_kanto);
 	randomize_fishing_encounters();
 	randomize_trainers();
+	randomize_mystery_egg();
 	return;
 }
 
@@ -289,3 +290,8 @@ void Rom::randomize_trainers() {
 	}
 }
 
+void Rom::randomize_mystery_egg() {
+	const int mystery_egg_offset = 0x15924F;	//Default is togepi
+	uint8_t pokemonID = std::rand() % number_of_pokemon;
+	rom[mystery_egg_offset] = pokemonID;
+}

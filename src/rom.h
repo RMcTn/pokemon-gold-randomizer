@@ -16,6 +16,7 @@ public:
 	void randomize_water_encounters(int offset);
 	void randomize_fishing_encounters();
 	void randomize_trainers();
+	void randomize_mystery_egg();
 	bool load();
 	bool save();
 	void run();	//Just a driver function whilst functionality is being built
