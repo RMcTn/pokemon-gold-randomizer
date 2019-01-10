@@ -29,11 +29,14 @@ void Rom::run() {
 	randomize_water_encounters(water_offset_kanto);
 	randomize_fishing_encounters();
 	randomize_trainers();
-	randomize_mystery_egg();
+	randomize_gift_pokemon();
+	randomize_static_pokemon();
+	randomize_game_corner_pokemon();
 	return;
 }
 
 void Rom::randomize_starters() {
+	//TODO: Randomize held items of starters
 	//Starter positons in memory for pokemon Gold
 	//First location is the sprite that shows when selecting the ball
 	//Second location is the noise the pokemon will make
@@ -58,13 +61,11 @@ void Rom::randomize_starters() {
 }
 
 void Rom::randomize_intro_pokemon() {
-	
-		uint8_t pokemonID = std::rand() % number_of_pokemon;
-		const int INTRO_POKEMON_POSITION = 0x5FDE;
-		const int INTRO_POKEMON_CRY_POSITION = 0X6061;
-		rom[INTRO_POKEMON_POSITION] = pokemonID;
-		rom[INTRO_POKEMON_CRY_POSITION] = pokemonID;
-
+	uint8_t pokemonID = std::rand() % number_of_pokemon;
+	const int INTRO_POKEMON_POSITION = 0x5FDE;
+	const int INTRO_POKEMON_CRY_POSITION = 0X6061;
+	rom[INTRO_POKEMON_POSITION] = pokemonID;
+	rom[INTRO_POKEMON_CRY_POSITION] = pokemonID;
 }
 
 bool Rom::load() {
@@ -167,7 +168,6 @@ std::string Rom::translate_string_to_game(const std::string text) {
 }
 
 void Rom::randomize_land_encounters(int offset) {
-	std::srand(seed);
 	//TODO: Add option to keep randomization across time cycles
 	//Gen 2 has morning, day and night cycles, need to randomize all 3 for each area
 	//Map sections seem to end at 0xFF
@@ -196,7 +196,6 @@ void Rom::randomize_land_encounters(int offset) {
 }
 
 void Rom::randomize_water_encounters(int offset) {
-	std::srand(seed);
 	//TODO: Refactor this with other area encounter randomizes, a lot of similar code
 	while (rom[offset] != 0xFF) {
 		const int water_encounters_number = 3;
@@ -220,7 +219,6 @@ void Rom::randomize_water_encounters(int offset) {
 void Rom::randomize_fishing_encounters() {
 	//TODO: Need to test this in Kanto
 	//TODO: Check if fishing has time cycle differences
-	std::srand(seed);
 	const int fishing_offset = 0x92A52;
 	//First pokemon id first after this offset
 	//Byte format goes:
@@ -252,7 +250,8 @@ std::string Rom::read_string(int offset, int length) {
 }
 
 void Rom::randomize_trainers() {
-	std::srand(seed);
+	//TODO: Need to randomize rivals pokemon to match the right pokemon depending on what player chooses
+	//TODO: May need to randomize moves as well to be appropriate to the pokemon randomized too, not sure yet
 
 	const int trainer_class_number = 0x42;
 
@@ -294,8 +293,105 @@ void Rom::randomize_trainers() {
 	}
 }
 
-void Rom::randomize_mystery_egg() {
-	const int mystery_egg_offset = 0x15924F;	//Default is togepi
-	uint8_t pokemonID = std::rand() % number_of_pokemon;
-	rom[mystery_egg_offset] = pokemonID;
+void Rom::randomize_gift_pokemon() {
+	//https://www.serebii.net/gs/gift.shtml for a list of gift pokemon in gold
+	std::vector<int> gift_pokemon_locations;
+	const int spearow_mem_locations = 0x1599FC;	//This spearow is nicknamed 'Kenya', at goldenrod
+	const int eevee_mem_locations = 0x15CC10;	//Eevee at goldenrod
+	const int togepi_mem_locations = 0x15924F;	//Mystery egg togepi
+	const int shuckle_mem_locations = 0x73E6;	//This shuckle is nicknamed 'Shuckie', at cianwood city
+	const int tyrogue_mem_locations = 0x119F20;	//Tyrogue at mt mortar
+	gift_pokemon_locations.push_back(spearow_mem_locations);
+	gift_pokemon_locations.push_back(eevee_mem_locations);
+	gift_pokemon_locations.push_back(togepi_mem_locations);
+	gift_pokemon_locations.push_back(shuckle_mem_locations);
+	gift_pokemon_locations.push_back(tyrogue_mem_locations);
+	
+	for (int location: gift_pokemon_locations) {
+		uint8_t pokemonID = std::rand() % number_of_pokemon;
+		rom[location] = pokemonID;
+	}
+}
+
+void Rom::randomize_game_corner_pokemon() {
+	//Pokemon rewards from the game corner
+	//Goldenrod city prizes (Johto)
+	const std::vector<int> abra_mem_locations {0x15E8B7, 0x15E8C8, 0x15E8CD, 0x15E93D}; 
+	const std::vector<int> ekans_mem_locations {0x15E8E5, 0x15E8F6, 0x15E8FB, 0x15E94D}; 
+	const std::vector<int> dratini_mem_locations {0x15E913, 0x15E924, 0x15E929, 0x15E95D}; 
+	//Celadon city prizes (Kanto)
+	const std::vector<int> mr_mime_mem_locations {0x179B9C, 0x179BAD, 0x179BB2, 0x179C22}; 
+	const std::vector<int> eevee_mem_locations {0x179BCA, 0x179BDB, 0x179BE0, 0x179C32}; 
+	const std::vector<int> porygon_mem_locations {0x179BF8, 0x179C09, 0x179C0E, 0x179C42}; 
+
+	std::vector<std::vector<int>> game_corner_pokemon_locations {
+		abra_mem_locations, 
+		ekans_mem_locations, 
+		dratini_mem_locations, 
+		mr_mime_mem_locations, 
+		eevee_mem_locations, 
+		porygon_mem_locations}; 
+
+	for (std::vector<int> pokemon_locations: game_corner_pokemon_locations) {
+		uint8_t pokemonID = std::rand() % number_of_pokemon;
+		Pokemon poke = pokemon[pokemonID - 1];
+		int count = 0;
+		for (int location: pokemon_locations) {
+			if (count == static_cast<int>(pokemon_locations.size() - 1)) {
+				//Write the name that appears in the game corner text
+				//TODO: Short names wont overwrite the original pokemon's name, need to pad this some way
+				write_string(location, poke.get_name(), false);
+				break;
+			}
+			rom[location] = pokemonID;
+			count++;
+		}
+	}
+}
+
+
+
+
+
+
+void Rom::randomize_static_pokemon() {
+	//https://www.serebii.net/gs/interactable.shtml for a list of stationary pokemon in gold
+	std::vector<std::vector<int>> static_pokemon_locations;
+
+	const std::vector<int> sudowoodo_mem_locations = {0x12E1D6};
+	static_pokemon_locations.push_back(sudowoodo_mem_locations);
+
+	//Static pokemon that make noises
+	//First location is sound made when activated, second location is what pokemon the encounter will be
+	const std::vector<int> gyarados_mem_locations = {0x124F76, 0x124F7A};
+	const std::vector<int> lapras_mem_locations = {0x111772, 0x111775};
+	const std::vector<int> snorlax_mem_locations = {0x13D2A4, 0x13D2AB};
+	const std::vector<int> hooh_mem_locations = {0x16E929, 0x16E919};
+	//TODO: Test lugia's locations
+	const std::vector<int> lugia_mem_locations = {0x11C1B6, 0x11C1A6};
+	const std::vector<int> entei_mem_locations = {0x1093E3, 0x2A7DD};
+	const std::vector<int> raikou_mem_locations = {0x1093D5, 0x2A7D8};
+	const std::vector<int> suicine_mem_locations = {0x1093F1, 0x2A7E2};
+	const std::vector<int> electrode1_mem_locations = {0x114DBA, 0x114DBD};
+	const std::vector<int> electrode2_mem_locations = {0x114DE5, 0x114DE8};
+	const std::vector<int> electrode3_mem_locations = {0x114E10, 0x114E13};
+	static_pokemon_locations.push_back(gyarados_mem_locations);
+	static_pokemon_locations.push_back(lapras_mem_locations);
+	static_pokemon_locations.push_back(snorlax_mem_locations);
+	static_pokemon_locations.push_back(hooh_mem_locations);
+	static_pokemon_locations.push_back(lugia_mem_locations);
+	static_pokemon_locations.push_back(entei_mem_locations);
+	static_pokemon_locations.push_back(raikou_mem_locations);
+	static_pokemon_locations.push_back(suicine_mem_locations);
+	//Electrodes at power plant
+	static_pokemon_locations.push_back(electrode1_mem_locations);
+	static_pokemon_locations.push_back(electrode2_mem_locations);
+	static_pokemon_locations.push_back(electrode3_mem_locations);
+
+	for (std::vector<int> pokemon_locations: static_pokemon_locations) {
+		uint8_t pokemonID = std::rand() % number_of_pokemon;
+		for (int location: pokemon_locations) {
+			rom[location] = pokemonID;
+		}
+	}
 }

@@ -16,7 +16,9 @@ public:
 	void randomize_water_encounters(int offset);
 	void randomize_fishing_encounters();
 	void randomize_trainers();
-	void randomize_mystery_egg();
+	void randomize_gift_pokemon();
+	void randomize_static_pokemon();
+	void randomize_game_corner_pokemon();
 	bool load();
 	bool save();
 	void run();	//Just a driver function whilst functionality is being built
