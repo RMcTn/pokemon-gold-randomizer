@@ -35,6 +35,10 @@ void Rom::run() {
 
 void Rom::randomize_starters() {
 	//Starter positons in memory for pokemon Gold
+	//First location is the sprite that shows when selecting the ball
+	//Second location is the noise the pokemon will make
+	//Third location is pokemon name shown in "player recieved ..." text
+	//Fourth location is last mention of pokemon in text, and also what will appear in your party
 	unsigned int const STARTER_POSITIONS[3][4] = {
 		{0x1800D2, 0x1800D4, 0x1800EB, 0x1800F6},		//Cyndaquil
 		{0x180114, 0x180116, 0x18012D, 0x180138},		//Totodile
