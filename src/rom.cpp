@@ -58,6 +58,15 @@ void Rom::randomize_starters() {
 		//TODO: Maybe print pokemon's type here like it does in the game
 		write_string(STARTER_TEXT_POSITIONS[i], poke.get_name() += "?", true);
 	}
+	unsigned int const starter_item_positions[3] = {
+		0x1800F8,		//Cyndaquil
+		0x18013A,		//Totodile
+		0x180176};		//Chikorita
+	//Randomize starter's items
+	for (int i = 0; i < 3; i++) {
+		uint8_t itemID = std::rand() % 255;
+		rom[starter_item_positions[i]] = itemID;	
+	}
 
 }
 
