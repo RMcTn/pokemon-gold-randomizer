@@ -20,6 +20,7 @@ Rom::Rom(int seed) {
 void Rom::run() {
 	populate_character_mapping();
 	populate_pokemon();
+	populate_items();
 
 	randomize_intro_pokemon();
 	randomize_starters();
@@ -79,7 +80,6 @@ bool Rom::load() {
 	rom.insert(rom.begin(), std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
 	
 	file.close();
-	load_pokemon_names();
 	return true;
 }
 
@@ -94,13 +94,29 @@ bool Rom::save() {
 
 std::vector<std::string> Rom::load_pokemon_names() {
 	unsigned int NAMES_OFFSET = 0x1B0B74;
-	unsigned int NAMES_LENGTH = 10;
+	unsigned int MAX_NAMES_LENGTH = 10;
 	std::vector<std::string> names;
 	std::vector<uint8_t> characters;
 	for (unsigned int i = 0; i < number_of_pokemon; i++) {
-		names.push_back(read_string(NAMES_OFFSET + (i * NAMES_LENGTH), NAMES_LENGTH));
+		names.push_back(read_string(NAMES_OFFSET + (i * MAX_NAMES_LENGTH), MAX_NAMES_LENGTH));
 	}
 	return names;	
+}
+
+std::vector<std::string> Rom::load_item_names() {
+	//Maybe use a map for seperate item types like key items and normal items
+	//Would be easier for allowed items
+	const unsigned int item_names_offset = 0x1B0000;
+	//12 characters and the terminator char
+	const unsigned int max_item_name_length = 13;
+	//This number includes "empty" items and filler items, may need to reword
+	const int number_of_items = 255;
+
+	std::vector<std::string> names;
+	for (int i = 0; i < number_of_items; i++) {
+		names.push_back(read_string(item_names_offset + i, max_item_name_length));
+	}
+	return names;
 }
 
 void Rom::populate_pokemon() {
@@ -108,6 +124,15 @@ void Rom::populate_pokemon() {
 	for (unsigned int i = 0; i < number_of_pokemon; i++) {
 		Pokemon new_pokemon = Pokemon(i + 1, names[i]);		
 		pokemon.push_back(new_pokemon);
+	}
+}
+
+void Rom::populate_items() {
+	std::vector<std::string> names = load_item_names();
+	const int number_of_items = 255;
+	for (unsigned int i = 0; i < number_of_items; i++) {
+		Item new_item = Item(i + 1, names[i]);		
+		items.push_back(new_item);
 	}
 }
 
@@ -236,10 +261,11 @@ void Rom::randomize_fishing_encounters() {
 	}
 }
 
-std::string Rom::read_string(int offset, int length) {
+//read_string will stop when it hits a terminator character
+std::string Rom::read_string(int offset, int max_length) {
 	std::string line;
 	uint8_t ch;
-	for (int i = 0; i < length; i++) {
+	for (int i = 0; i < max_length; i++) {
 		ch = rom[offset + i];
 		if (ch == GB_STRING_TERMINATOR) {
 			break;
