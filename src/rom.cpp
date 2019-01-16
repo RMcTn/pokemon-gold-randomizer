@@ -7,12 +7,12 @@
 #include <sstream>
 #include <ctime>
 
-Rom::Rom() {
+Rom::Rom() : items(number_of_items) {
 	seed = std::time(nullptr);	
 	std::srand(seed);		
 }
 
-Rom::Rom(int seed) {
+Rom::Rom(int seed) : items(number_of_items) {
 	this->seed = seed;
 	std::srand(seed);		
 }
@@ -21,6 +21,7 @@ void Rom::run() {
 	populate_character_mapping();
 	populate_pokemon();
 	populate_items();
+	items.populate_allowed_items(load_banned_items());
 
 	randomize_intro_pokemon();
 	randomize_starters();
@@ -64,8 +65,8 @@ void Rom::randomize_starters() {
 		0x180176};		//Chikorita
 	//Randomize starter's items
 	for (int i = 0; i < 3; i++) {
-		uint8_t itemID = std::rand() % 255;
-		rom[starter_item_positions[i]] = itemID;	
+		Item item = items.random_allowed_item();
+		rom[starter_item_positions[i]] = item.get_id();	
 	}
 
 }
@@ -113,8 +114,6 @@ std::vector<std::string> Rom::load_pokemon_names() {
 }
 
 std::vector<std::string> Rom::load_item_names() {
-	//Maybe use a map for seperate item types like key items and normal items
-	//Would be easier for allowed items
 	const unsigned int item_names_offset = 0x1B0000;
 	//12 characters and the terminator char
 	const unsigned int max_item_name_length = 13;
@@ -122,8 +121,14 @@ std::vector<std::string> Rom::load_item_names() {
 	const int number_of_items = 255;
 
 	std::vector<std::string> names;
-	for (int i = 0; i < number_of_items; i++) {
-		names.push_back(read_string(item_names_offset + i, max_item_name_length));
+	int len;
+	int offset = item_names_offset;
+	for (int i = 0; i <= number_of_items; i++) {
+		std::string name;
+		len = read_string_and_length(offset, max_item_name_length, name);
+		names.push_back(name);
+		//+1 for terminator character
+		offset += len + 1;
 	}
 	return names;
 }
@@ -139,10 +144,12 @@ void Rom::populate_pokemon() {
 void Rom::populate_items() {
 	std::vector<std::string> names = load_item_names();
 	const int number_of_items = 255;
-	for (unsigned int i = 0; i < number_of_items; i++) {
-		Item new_item = Item(i + 1, names[i]);		
-		items.push_back(new_item);
+	std::vector<Item> loaded_items;
+	for (unsigned int i = 0; i <= number_of_items; i++) {
+		Item new_item = Item(i, names[i]);		
+		loaded_items.push_back(new_item);
 	}
+	items.set_items(loaded_items);
 }
 
 void Rom::write_string(unsigned int offset, std::string text, bool add_terminator /*=false*/) {
@@ -429,4 +436,79 @@ void Rom::randomize_static_pokemon() {
 			rom[location] = pokemonID;
 		}
 	}
+}
+
+/*
+ * Reads a text file of banned item IDs for the randomization to avoid.
+ * File should be only numerical IDs from 0-255, seperated by a space or a newline.
+ * Will be able to read numbers from the start of words (1hello for example), but
+ * this may not work as well
+ */
+std::vector<Item> Rom::load_banned_items() {
+	//Default banned items are items that cannot be obtained in the game normally
+	const std::vector<int> default_banned_item_ids = {
+		0x06, 0x19, 0x2D, 0x32, 0x38,
+		0x46, 0x5A, 0x64, 0x73, 0x74,
+		0x78, 0x81, 0x87, 0x88, 0x89,
+		0x8D, 0x8E, 0x91, 0x94, 0x95,
+		0x99, 0x9A, 0x9B, 0xA2, 0xAB,
+		0xB0, 0xB3, 0xBE, 0xC3, 0xDC,
+		0xFA, 0xFB, 0xFC, 0xFD, 0xFE,
+		0xFF
+	};
+	std::vector<Item> default_banned_items;
+	for (int id : default_banned_item_ids) {
+		default_banned_items.push_back(items.get_item(id));
+	}
+	std::vector<Item> banned_items;
+	const std::string filename = "items/gold_banned_items.txt";
+	std::ifstream banned_item_file(filename, std::ios::in);
+	//No banned items file found, revert to default banned items
+	if (!banned_item_file.is_open()) {
+		std::cerr << "Cannot open " << filename << ". Using default banned item list\n";
+	       	return default_banned_items;
+	}
+
+	std::string line;
+	int line_number = 1;
+	while (banned_item_file >> line) {
+		try {
+			int item_id = std::stoi(line, nullptr);	
+			if (item_id > UINT8_MAX) {
+				std::ostringstream err_msg;
+				err_msg << "ID " << line << " at line number " << line_number << " in " << filename << " is too large. Max is " << UINT8_MAX;
+				throw std::out_of_range(err_msg.str());
+			}
+			banned_items.push_back(items.get_item(item_id));
+			line_number++;
+		} catch (std::invalid_argument& e) {
+			std::cerr << "Invalid value in " << filename << " at line " << line_number << "\n";
+			std::cerr << "Falling back on default banned item list\n";
+			return default_banned_items;
+		} catch (std::out_of_range& e) {
+			std::cerr << e.what() << "\n";
+			std::cerr << "Falling back on default banned item list\n";
+			return default_banned_items;
+		}
+	}
+	banned_item_file.close();
+	return banned_items;
+}
+
+/*
+ * Reads the string at offset until terminator character or max length is reached, into line.
+ * Length does not include terminator character
+ */
+int Rom::read_string_and_length(int offset, int max_length, std::string& line) {
+	uint8_t ch;
+	int count = 0;
+	for (int i = 0; i < max_length; i++) {
+		ch = rom[offset + i];
+		if (ch == GB_STRING_TERMINATOR) {
+			break;
+		}
+		line.push_back(ch);
+		count++;
+	}
+	return count;	
 }
