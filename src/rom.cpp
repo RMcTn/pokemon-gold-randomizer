@@ -512,3 +512,9 @@ int Rom::read_string_and_length(int offset, int max_length, std::string& line) {
 	}
 	return count;	
 }
+
+void Rom::enable_shiny_mode() {
+	//Replace the call in code to check if the pokemon should be shiny or not with
+	//an opcode that does nothing
+	rom[0x9C70] = 0x00;
+}
