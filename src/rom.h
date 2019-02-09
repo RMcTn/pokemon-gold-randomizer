@@ -43,15 +43,15 @@ private:
 	std::vector<std::string> load_pokemon_names();
 	std::vector<std::string> load_item_names();
 	std::vector<Item> load_banned_items();
-	void write_string(unsigned int offset, std::string text, bool add_terminator = false);
+	void write_string(unsigned int offset, const std::string& text, bool add_terminator = false);
 	std::vector<Pokemon> pokemon;
 	const int number_of_items = 255;
 	Items items;
 	void populate_pokemon();
 	void populate_items();
 	void populate_character_mapping();
-	std::string translate_string_from_game(const std::string text);
-	std::string translate_string_to_game(const std::string text);
+	std::string translate_string_from_game(const std::string& text);
+	std::string translate_string_to_game(const std::string& text);
 	std::string read_string(int offset, int max_length);
 	int read_string_and_length(int offset, int max_length, std::string& line);
 };

@@ -38,7 +38,6 @@ void Rom::run() {
 }
 
 void Rom::randomize_starters() {
-	//TODO: Randomize held items of starters
 	//Starter positons in memory for pokemon Gold
 	//First location is the sprite that shows when selecting the ball
 	//Second location is the noise the pokemon will make
@@ -59,6 +58,7 @@ void Rom::randomize_starters() {
 		//TODO: Maybe print pokemon's type here like it does in the game
 		write_string(STARTER_TEXT_POSITIONS[i], poke.get_name() += "?", true);
 	}
+	//TODO: Maybe move randomizing starters items to a seperate function
 	unsigned int const starter_item_positions[3] = {
 		0x1800F8,		//Cyndaquil
 		0x18013A,		//Totodile
@@ -152,7 +152,7 @@ void Rom::populate_items() {
 	items.set_items(loaded_items);
 }
 
-void Rom::write_string(unsigned int offset, std::string text, bool add_terminator /*=false*/) {
+void Rom::write_string(unsigned int offset, const std::string& text, bool add_terminator /*=false*/) {
 	std::string translated = translate_string_to_game(text);
 	int i = 0;
 	for (uint8_t ch : translated) {
@@ -193,7 +193,7 @@ void Rom::populate_character_mapping() {
 	}
 }
 
-std::string Rom::translate_string_to_game(const std::string text) {
+std::string Rom::translate_string_to_game(const std::string& text) {
 	std::string translated;		//Maybe this should be a vector of chars or something instead
 	for (uint8_t ch : text) {
 		auto element = character_mapping.find(ch);
@@ -446,6 +446,7 @@ void Rom::randomize_static_pokemon() {
  */
 std::vector<Item> Rom::load_banned_items() {
 	//Default banned items are items that cannot be obtained in the game normally
+	//https://bulbapedia.bulbagarden.net/wiki/List_of_items_by_index_number_(Generation_II)
 	const std::vector<int> default_banned_item_ids = {
 		0x06, 0x19, 0x2D, 0x32, 0x38,
 		0x46, 0x5A, 0x64, 0x73, 0x74,
@@ -516,5 +517,6 @@ int Rom::read_string_and_length(int offset, int max_length, std::string& line) {
 void Rom::enable_shiny_mode() {
 	//Replace the call in code to check if the pokemon should be shiny or not with
 	//an opcode that does nothing
-	rom[0x9C70] = 0x00;
+	const int shiny_check_location = 0x9C70;
+	rom[shiny_check_location] = 0x00;
 }
