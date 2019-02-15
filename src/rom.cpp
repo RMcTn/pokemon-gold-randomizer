@@ -520,3 +520,13 @@ void Rom::enable_shiny_mode() {
 	const int shiny_check_location = 0x9C70;
 	rom[shiny_check_location] = 0x00;
 }
+
+void Rom::randomize_pokemon_palettes() {
+	//According to https://datacrystal.romhacking.net/wiki/Pok%C3%A9mon_Gold_and_Silver:ROM_map#Pokemon_Colors Pokemon palettes are between 0xAD45 and 0xB540
+	//However, 0xB53D, 0xB53E and 0xB53F seem to be the player's sprite palette
+	const int pokemon_palette_start = 0xAD45;
+	const int pokemon_palette_end = 0xB53D;
+	for (int i = pokemon_palette_start; i < pokemon_palette_end; i++) {
+		rom[i] = std::rand() % UINT8_MAX;
+	}	
+}

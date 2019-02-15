@@ -22,6 +22,7 @@ public:
 	void randomize_static_pokemon();
 	void randomize_game_corner_pokemon();
 	void enable_shiny_mode();
+	void randomize_pokemon_palettes();
 	bool load();
 	bool save();
 	void run();	//Just a driver function whilst functionality is being built
