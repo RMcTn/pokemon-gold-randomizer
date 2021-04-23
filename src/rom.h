@@ -36,7 +36,7 @@ public:
 
     void randomize_pokemon_palettes();
 
-    bool load(std::string romFilename);
+    bool load(const std::string& romFilename);
 
     bool save();
 

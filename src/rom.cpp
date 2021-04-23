@@ -2,10 +2,11 @@
 
 #include <cstdint>
 #include <cstdlib>
-#include <exception>
 #include <iostream>
 #include <sstream>
 #include <ctime>
+
+// TODO: Add logging
 
 Rom::Rom() : items(number_of_items) {
     seed = std::time(nullptr);
@@ -34,7 +35,6 @@ void Rom::run() {
     randomize_gift_pokemon();
     randomize_static_pokemon();
     randomize_game_corner_pokemon();
-    return;
 }
 
 void Rom::randomize_starters() {
@@ -64,9 +64,9 @@ void Rom::randomize_starters() {
             0x18013A,        //Totodile
             0x180176};        //Chikorita
     //Randomize starter's items
-    for (int i = 0; i < 3; i++) {
+    for (unsigned int starter_item_position : starter_item_positions) {
         Item item = items.random_allowed_item();
-        rom[starter_item_positions[i]] = item.get_id();
+        rom[starter_item_position] = item.get_id();
     }
 
 }
@@ -79,7 +79,7 @@ void Rom::randomize_intro_pokemon() {
     rom[INTRO_POKEMON_CRY_POSITION] = pokemonID;
 }
 
-bool Rom::load(std::string romFilename) {
+bool Rom::load(const std::string &romFilename) {
     file.open(romFilename, std::fstream::in | std::ios::binary);
     if (!file.is_open()) return false;
 
@@ -118,7 +118,6 @@ std::vector<std::string> Rom::load_item_names() {
     //12 characters and the terminator char
     const unsigned int max_item_name_length = 13;
     //This number includes "empty" items and filler items, may need to reword
-    const int number_of_items = 255;
 
     std::vector<std::string> names;
     int len;
@@ -143,7 +142,6 @@ void Rom::populate_pokemon() {
 
 void Rom::populate_items() {
     std::vector<std::string> names = load_item_names();
-    const int number_of_items = 255;
     std::vector<Item> loaded_items;
     for (unsigned int i = 0; i <= number_of_items; i++) {
         Item new_item = Item(i, names[i]);
@@ -303,8 +301,7 @@ void Rom::randomize_trainers() {
     const int trainer_class_amounts[] = {1, 1, 1, 1, 1, 1, 1, 1, 15, 0, 1, 3, 1, 1, 1, 1, 1, 1, 1, 5, 1, 12, 18, 19, 15,
                                          1, 19, 20, 16, 13, 31, 5, 2, 3, 1, 14, 22, 21, 19, 12, 12, 6, 2, 20, 9, 1, 3,
                                          8, 5, 9, 4, 12, 21, 19, 2, 9, 7, 3, 12, 6, 8, 5, 1, 1, 2, 5};
-    for (int i = 0; i < trainer_class_number; i++) {
-        int limit = trainer_class_amounts[i];
+    for (int limit : trainer_class_amounts) {
         for (int trainer_num = 0; trainer_num < limit; trainer_num++) {
             std::string name = read_string(offset,
                                            UINT8_MAX);    //Just using UINT8_MAX as a length isn't needed. Maybe have a read function that doesn't need a length?
@@ -327,6 +324,7 @@ void Rom::randomize_trainers() {
 
                 if (has_custom_moves) {
                     //TODO: Randomize moves
+                    //TODO: just set the has_custom_moves flag to false?
                     //1 byte per move
                     offset += 4;
 
@@ -377,7 +375,7 @@ void Rom::randomize_game_corner_pokemon() {
             eevee_mem_locations,
             porygon_mem_locations};
 
-    for (std::vector<int> pokemon_locations: game_corner_pokemon_locations) {
+    for (const std::vector<int> &pokemon_locations: game_corner_pokemon_locations) {
         uint8_t pokemonID = std::rand() % number_of_pokemon;
         Pokemon poke = pokemon[pokemonID - 1];
         int count = 0;
@@ -429,7 +427,7 @@ void Rom::randomize_static_pokemon() {
     static_pokemon_locations.push_back(electrode2_mem_locations);
     static_pokemon_locations.push_back(electrode3_mem_locations);
 
-    for (std::vector<int> pokemon_locations: static_pokemon_locations) {
+    for (const std::vector<int> &pokemon_locations: static_pokemon_locations) {
         uint8_t pokemonID = std::rand() % number_of_pokemon;
         for (int location: pokemon_locations) {
             rom[location] = pokemonID;
@@ -457,6 +455,7 @@ std::vector<Item> Rom::load_banned_items() {
             0xFF
     };
     std::vector<Item> default_banned_items;
+    default_banned_items.reserve(default_banned_item_ids.size());
     for (int id : default_banned_item_ids) {
         default_banned_items.push_back(items.get_item(id));
     }
