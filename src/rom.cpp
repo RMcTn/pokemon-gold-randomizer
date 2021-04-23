@@ -96,13 +96,13 @@ bool Rom::load(const std::string &romFilename) {
 bool Rom::save() {
     file.open("gold randomized.gbc", std::ios::out | std::ios::binary);
     if (!file.is_open()) return false;
-    //Standard says vector is contiguous memory, get the start address of the vector and write it to the file
     file.write((char *) &rom[0], sizeof(uint8_t) * rom.size());
     file.close();
     return true;
 }
 
 std::vector<std::string> Rom::load_pokemon_names() {
+    // TODO: Why return anything from this? Just set the pokemon's name from here?
     unsigned int NAMES_OFFSET = 0x1B0B74;
     unsigned int MAX_NAMES_LENGTH = 10;
     std::vector<std::string> names;
@@ -111,6 +111,22 @@ std::vector<std::string> Rom::load_pokemon_names() {
         names.push_back(read_string(NAMES_OFFSET + (i * MAX_NAMES_LENGTH), MAX_NAMES_LENGTH));
     }
     return names;
+}
+
+void Rom::populate_pokemon_stats() {
+    const unsigned int stats_offset = 0x51B0B;
+    const unsigned int stats_step = 0x20;
+    // pokedex id, hp, defence, speed, special attack,
+    // special defence, then 14 bytes we don't really care about right now
+    for (Pokemon &current_pokemon : pokemon) {
+        const unsigned int current_stats_offset = stats_offset + ((current_pokemon.get_id() - 1) * stats_step);
+        current_pokemon.hp = rom[current_stats_offset + 1];
+        current_pokemon.attack = rom[current_stats_offset + 2];
+        current_pokemon.defence = rom[current_stats_offset + 3];
+        current_pokemon.speed = rom[current_stats_offset + 4];
+        current_pokemon.special_attack = rom[current_stats_offset + 5];
+        current_pokemon.special_defence = rom[current_stats_offset + 6];
+    }
 }
 
 std::vector<std::string> Rom::load_item_names() {
@@ -133,11 +149,13 @@ std::vector<std::string> Rom::load_item_names() {
 }
 
 void Rom::populate_pokemon() {
+    // TODO: Populate pokemon list first then fill in values for each populate function?
     std::vector<std::string> names = load_pokemon_names();
     for (unsigned int i = 0; i < number_of_pokemon; i++) {
         Pokemon new_pokemon = Pokemon(i + 1, names[i]);
         pokemon.push_back(new_pokemon);
     }
+    populate_pokemon_stats();
 }
 
 void Rom::populate_items() {
@@ -191,8 +209,27 @@ void Rom::populate_character_mapping() {
     }
 }
 
+std::string Rom::translate_string_from_game(const std::string &text) {
+    std::string translated;
+    for (uint8_t ch : text) {
+        bool found_mapping = false;
+        for (const auto&[normal_char, game_mapped_char] : character_mapping) {
+            if (game_mapped_char == ch) {
+                translated.push_back(normal_char);
+                found_mapping = true;
+            }
+        }
+        if (!found_mapping) {
+            // No conversion, just add the character
+            translated.push_back(ch);
+        }
+
+    }
+    return translated;
+}
+
 std::string Rom::translate_string_to_game(const std::string &text) {
-    std::string translated;        //Maybe this should be a vector of chars or something instead
+    std::string translated;
     for (uint8_t ch : text) {
         auto element = character_mapping.find(ch);
         if (element == character_mapping.end()) {
@@ -205,6 +242,7 @@ std::string Rom::translate_string_to_game(const std::string &text) {
     }
     return translated;
 }
+
 
 void Rom::randomize_land_encounters(int offset) {
     //TODO: Add option to keep randomization across time cycles

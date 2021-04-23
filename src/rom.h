@@ -82,4 +82,6 @@ private:
     std::string read_string(int offset, int max_length);
 
     int read_string_and_length(int offset, int max_length, std::string &line);
+
+    void populate_pokemon_stats();
 };
