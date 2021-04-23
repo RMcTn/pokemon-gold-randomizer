@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include "pokemon_stats.h"
 
 class Pokemon {
 public:
@@ -15,12 +16,8 @@ public:
 
     std::string get_name() const { return name; }
 
-    unsigned int hp;
-    unsigned int attack;
-    unsigned int defence;
-    unsigned int speed;
-    unsigned int special_attack;
-    unsigned int special_defence;
+
+    PokemonStats stats;
 
 private:
     unsigned int id;

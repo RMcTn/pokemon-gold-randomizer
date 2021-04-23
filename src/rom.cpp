@@ -5,6 +5,8 @@
 #include <iostream>
 #include <sstream>
 #include <ctime>
+#include <algorithm>
+#include <random>
 
 // TODO: Add logging
 
@@ -14,6 +16,7 @@ Rom::Rom() : items(number_of_items) {
 }
 
 Rom::Rom(int seed) : items(number_of_items) {
+    // TODO: use rng engine instead of srand
     this->seed = seed;
     std::srand(seed);
 }
@@ -79,6 +82,11 @@ void Rom::randomize_intro_pokemon() {
     rom[INTRO_POKEMON_CRY_POSITION] = pokemonID;
 }
 
+void Rom::shuffle_stats() {
+    auto rng = std::default_random_engine{};
+    std::shuffle(pokemon_stats.begin(), pokemon_stats.end(), rng);
+}
+
 bool Rom::load(const std::string &romFilename) {
     file.open(romFilename, std::fstream::in | std::ios::binary);
     if (!file.is_open()) return false;
@@ -118,14 +126,43 @@ void Rom::populate_pokemon_stats() {
     const unsigned int stats_step = 0x20;
     // pokedex id, hp, defence, speed, special attack,
     // special defence, then 14 bytes we don't really care about right now
+
+    // TODO: Implement randomizing for stats
     for (Pokemon &current_pokemon : pokemon) {
+        // TODO: @Cleanup for now we load into the pokemon directly and a stats array, may be
+        // better overall for randomizing etc if we just keep each important thing in an array that maps
+        // to the pokemon id
         const unsigned int current_stats_offset = stats_offset + ((current_pokemon.get_id() - 1) * stats_step);
-        current_pokemon.hp = rom[current_stats_offset + 1];
-        current_pokemon.attack = rom[current_stats_offset + 2];
-        current_pokemon.defence = rom[current_stats_offset + 3];
-        current_pokemon.speed = rom[current_stats_offset + 4];
-        current_pokemon.special_attack = rom[current_stats_offset + 5];
-        current_pokemon.special_defence = rom[current_stats_offset + 6];
+        current_pokemon.stats.hp = rom[current_stats_offset + 1];
+        current_pokemon.stats.attack = rom[current_stats_offset + 2];
+        current_pokemon.stats.defence = rom[current_stats_offset + 3];
+        current_pokemon.stats.speed = rom[current_stats_offset + 4];
+        current_pokemon.stats.special_attack = rom[current_stats_offset + 5];
+        current_pokemon.stats.special_defence = rom[current_stats_offset + 6];
+        PokemonStats stats{};
+        stats.hp = rom[current_stats_offset + 1];
+        stats.attack = rom[current_stats_offset + 2];
+        stats.defence = rom[current_stats_offset + 3];
+        stats.speed = rom[current_stats_offset + 4];
+        stats.special_attack = rom[current_stats_offset + 5];
+        stats.special_defence = rom[current_stats_offset + 6];
+        pokemon_stats.push_back(stats);
+
+    }
+    for (int i = 0; i < number_of_pokemon; i++) {
+        const auto stat = pokemon_stats[i];
+        const auto tempPokemon = pokemon[i];
+        printf("name: %s hp %d att %d def %d spd %d spatt %d spdef %d\n",
+               translate_string_from_game(tempPokemon.get_name()).c_str(), stat.hp, stat.attack, stat.defence,
+               stat.speed, stat.special_attack, stat.special_defence);
+    }
+    printf("=====AFTER SHUFFLE=====\n");
+    for (int i = 0; i < number_of_pokemon; i++) {
+        const auto stat = pokemon_stats[i];
+        const auto tempPokemon = pokemon[i];
+        printf("name: %s hp %d att %d def %d spd %d spatt %d spdef %d\n",
+               translate_string_from_game(tempPokemon.get_name()).c_str(), stat.hp, stat.attack, stat.defence,
+               stat.speed, stat.special_attack, stat.special_defence);
     }
 }
 

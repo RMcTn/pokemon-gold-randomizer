@@ -36,7 +36,7 @@ public:
 
     void randomize_pokemon_palettes();
 
-    bool load(const std::string& romFilename);
+    bool load(const std::string &romFilename);
 
     bool save();
 
@@ -66,6 +66,7 @@ private:
     void write_string(unsigned int offset, const std::string &text, bool add_terminator = false);
 
     std::vector<Pokemon> pokemon;
+    std::vector<PokemonStats> pokemon_stats;
     const int number_of_items = 255;
     Items items;
 
@@ -84,4 +85,6 @@ private:
     int read_string_and_length(int offset, int max_length, std::string &line);
 
     void populate_pokemon_stats();
+
+    void shuffle_stats();
 };
