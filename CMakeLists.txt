@@ -4,4 +4,4 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(pokemon_randomizer src/main.cpp src/pokemon.cpp src/items.cpp src/item.cpp src/rom.cpp src/pokemon_stats.h)
+add_executable(pokemon_randomizer src/main.cpp src/pokemon.cpp src/items.cpp src/item.cpp src/rom.cpp src/pokemon_stats.h src/evolution.h)

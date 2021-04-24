@@ -183,6 +183,93 @@ void Rom::populate_pokemon() {
         pokemon.push_back(new_pokemon);
     }
     populate_pokemon_stats();
+    populate_pokemon_evolutions();
+}
+
+void Rom::populate_pokemon_evolutions() {
+    const unsigned int base_evolutions_offset = 0x429B3;
+    unsigned int evo_offset = base_evolutions_offset;
+    // Evolutions and attacks are grouped together since they're both checked at level-up. from https://github.com/pret/pokegold/blob/master/data/pokemon/evos_attacks_pointers.asm;
+    // Move learnset (in increasing level order):
+    // level, move
+    for (int i = 0; i < number_of_pokemon; i++) {
+        // evolution_type 0 means no more evolutions for that pokemon
+        unsigned int evolution_type = rom[evo_offset];
+        while (evolution_type != 0) {
+            Evolution evolution{};
+            evolution.pokemon = i;
+            switch (evolution_type) {
+                // Options for increasing offset:
+                // increase offset in each switch branch for what's relevant,
+                // then loop till finding the next 00 (end of moveset)
+                case EvolutionType::EVOLVE_LEVEL: {
+                    // EVOLVE_LEVEL, level, species
+                    unsigned int evolve_level = rom[evo_offset + 1];
+                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 2] - 1;
+                    evolution.evolution_type = EvolutionType::EVOLVE_LEVEL;
+                    evolution.level_to_evolve = evolve_level;
+                    evolution.pokemon_to_evolve_to = pokemon_to_evolve_to;
+                    evo_offset += 3;
+                    break;
+                }
+                case EvolutionType::EVOLVE_ITEM: {
+                    // EVOLVE_ITEM, used item, species
+                    unsigned int item_id_to_evolve = rom[evo_offset + 1] - 1;
+                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 2] - 1;
+                    evolution.evolution_type = EvolutionType::EVOLVE_ITEM;
+                    evolution.item_id_to_evolve = item_id_to_evolve;
+                    evolution.pokemon_to_evolve_to = pokemon_to_evolve_to;
+                    evo_offset += 3;
+                    break;
+                }
+                case EvolutionType::EVOLVE_TRADE: {
+                    // EVOLVE_TRADE, held item (or -1 for none), species
+                    unsigned int item_id_to_evolve = rom[evo_offset + 1] - 1;
+                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 2] - 1;
+                    evolution.evolution_type = EvolutionType::EVOLVE_TRADE;
+                    evolution.item_id_to_evolve = item_id_to_evolve;
+                    evolution.pokemon_to_evolve_to = pokemon_to_evolve_to;
+                    evo_offset += 3;
+                    break;
+                }
+                case EvolutionType::EVOLVE_HAPPINESS: {
+                    // EVOLVE_HAPPINESS, TR_* constant (ANYTIME, MORNDAY, NITE), species
+                    unsigned int happiness_time = rom[evo_offset + 1];
+                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 2] - 1;
+                    evolution.evolution_type = EvolutionType::EVOLVE_HAPPINESS;
+                    evolution.happiness_condition = static_cast<EvolutionHappinessCondition>(happiness_time);
+                    evolution.pokemon_to_evolve_to = pokemon_to_evolve_to;
+                    evo_offset += 3;
+                    break;
+                }
+                case EvolutionType::EVOLVE_STAT: {
+                    // EVOLVE_STAT, level, ATK_*_DEF constant (LT, GT, EQ), species
+                    unsigned int level_to_evolve = rom[evo_offset + 1];
+                    unsigned int stat_condition = rom[evo_offset + 2];
+                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 3] - 1;
+                    evolution.evolution_type = EvolutionType::EVOLVE_STAT;
+                    evolution.level_to_evolve = level_to_evolve;
+                    evolution.stat_condition = static_cast<EvolutionStatCondition>(stat_condition);
+                    evolution.pokemon_to_evolve_to = pokemon_to_evolve_to;
+                    evo_offset += 4;
+                    break;
+                }
+                default:
+                    std::cerr << "Something went wrong when loading in evolutions, evolution_type was "
+                              << evolution_type << '\n';
+                    break;
+            }
+            pokemon_evolutions.push_back(evolution);
+            evolution_type = rom[evo_offset];
+        }
+        evo_offset++; // move by 1 to skip the 0
+        // skip over move learnset by finding next 0
+        while (rom[evo_offset] != 0) {
+            evo_offset++;
+        }
+        evo_offset++;
+        // do evo stuff again
+    }
 }
 
 void Rom::populate_items() {

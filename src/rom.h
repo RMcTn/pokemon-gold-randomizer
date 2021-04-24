@@ -1,6 +1,7 @@
 #include "item.h"
 #include "items.h"
 #include "pokemon.h"
+#include "evolution.h"
 
 #include <fstream>
 #include <vector>
@@ -69,6 +70,7 @@ private:
 
     std::vector<Pokemon> pokemon;
     std::vector<PokemonStats> pokemon_stats;
+    std::vector<Evolution> pokemon_evolutions;
     const int number_of_items = 255;
     Items items;
 
@@ -89,4 +91,6 @@ private:
     void populate_pokemon_stats();
 
     void shuffle_stats();
+
+    void populate_pokemon_evolutions();
 };
