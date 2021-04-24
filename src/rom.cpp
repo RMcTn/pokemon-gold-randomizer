@@ -40,7 +40,6 @@ void Rom::run() {
     randomize_static_pokemon();
     randomize_game_corner_pokemon();
     randomize_evolutions();
-    // TODO: We don't actually write the shuffled stats back to rom yet
 //    shuffle_stats(); // TODO: Add flag for this
 }
 
@@ -154,10 +153,19 @@ void Rom::randomize_evolutions() {
 }
 
 void Rom::shuffle_stats() {
-    // TODO: Does this actually get wrote back to ROM at any point?
     std::shuffle(pokemon_stats.begin(), pokemon_stats.end(), rng);
+    const unsigned int stats_offset = 0x51B0B;
+    const unsigned int stats_step = 0x20;
     for (int i = 0; i < number_of_pokemon; i++) {
-        pokemon[i].stats = pokemon_stats[i];
+        unsigned int current_stats_offset = stats_offset + (i * stats_step);
+        const PokemonStats &stats = pokemon_stats[i];
+        pokemon[i].stats = stats;
+        rom[current_stats_offset + 1] = stats.hp;
+        rom[current_stats_offset + 2] = stats.attack;
+        rom[current_stats_offset + 3] = stats.defence;
+        rom[current_stats_offset + 4] = stats.speed;
+        rom[current_stats_offset + 5] = stats.special_attack;
+        rom[current_stats_offset + 6] = stats.special_defence;
     }
 }
 
