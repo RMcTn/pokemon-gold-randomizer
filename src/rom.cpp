@@ -150,21 +150,6 @@ void Rom::populate_pokemon_stats() {
         pokemon_stats.push_back(stats);
 
     }
-    for (int i = 0; i < number_of_pokemon; i++) {
-        const auto stat = pokemon_stats[i];
-        const auto tempPokemon = pokemon[i];
-        printf("name: %s hp %d att %d def %d spd %d spatt %d spdef %d\n",
-               translate_string_from_game(tempPokemon.get_name()).c_str(), stat.hp, stat.attack, stat.defence,
-               stat.speed, stat.special_attack, stat.special_defence);
-    }
-    printf("=====AFTER SHUFFLE=====\n");
-    for (int i = 0; i < number_of_pokemon; i++) {
-        const auto stat = pokemon_stats[i];
-        const auto tempPokemon = pokemon[i];
-        printf("name: %s hp %d att %d def %d spd %d spatt %d spdef %d\n",
-               translate_string_from_game(tempPokemon.get_name()).c_str(), stat.hp, stat.attack, stat.defence,
-               stat.speed, stat.special_attack, stat.special_defence);
-    }
 }
 
 std::vector<std::string> Rom::load_item_names() {
