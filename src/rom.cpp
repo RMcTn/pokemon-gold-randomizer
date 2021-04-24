@@ -7,6 +7,7 @@
 #include <ctime>
 #include <algorithm>
 #include <random>
+#include <cassert>
 
 // TODO: Add logging
 
@@ -28,7 +29,7 @@ void Rom::run() {
 
     // TODO: Add flags for each option
     randomize_intro_pokemon();
-    randomize_starters(); // TODO: Allow chosing of starters
+    randomize_starters(); // TODO: Allow choosing of starters
     randomize_land_encounters(land_offset_johto);
     randomize_land_encounters(land_offset_kanto);
     randomize_water_encounters(water_offset_johto);
@@ -38,6 +39,8 @@ void Rom::run() {
     randomize_gift_pokemon();
     randomize_static_pokemon();
     randomize_game_corner_pokemon();
+    randomize_evolutions();
+    // TODO: We don't actually write the shuffled stats back to rom yet
 //    shuffle_stats(); // TODO: Add flag for this
 }
 
@@ -53,7 +56,7 @@ void Rom::randomize_starters() {
             {0x180150, 0x180152, 0x180169, 0x180174}};        //Chikorita
     unsigned int const STARTER_TEXT_POSITIONS[] = {0x1805F4, 0x180620, 0x18064D};
     for (int i = 0; i < 3; i++) {
-        std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+        std::uniform_int_distribution<unsigned int> distribution(1, number_of_pokemon);
         uint8_t pokemonID = distribution(rng);
         for (unsigned int position : STARTER_POSITIONS[i]) {
             //TODO: Noticed a weird sprite when unown was picked. Look into it
@@ -77,7 +80,7 @@ void Rom::randomize_starters() {
 }
 
 void Rom::randomize_intro_pokemon() {
-    std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+    std::uniform_int_distribution<unsigned int> distribution(1, number_of_pokemon);
     uint8_t pokemonID = distribution(rng);
     const int INTRO_POKEMON_POSITION = 0x5FDE;
     const int INTRO_POKEMON_CRY_POSITION = 0X6061;
@@ -85,7 +88,73 @@ void Rom::randomize_intro_pokemon() {
     rom[INTRO_POKEMON_CRY_POSITION] = pokemonID;
 }
 
+void Rom::randomize_evolutions() {
+    // TODO: Should it be possible for 2 pokemon to be able to evolve into the same thing?
+    std::uniform_int_distribution<unsigned int> distribution(1, number_of_pokemon);
+    for (Evolution &evolution : pokemon_evolutions) {
+        uint8_t pokemonID = distribution(rng);
+        evolution.pokemon_to_evolve_to = pokemonID;
+        printf("%s now evolves to %s\n", translate_string_from_game(pokemon[evolution.pokemon - 1].get_name()).c_str(),
+               translate_string_from_game(pokemon[evolution.pokemon_to_evolve_to - 1].get_name()).c_str());
+    }
+
+    const unsigned int base_evolutions_offset = 0x429B3;
+    unsigned int evo_offset = base_evolutions_offset;
+    // @NOTE: Look at populate_pokemon_evolutions for info on the memory for evolutions
+    unsigned int current_evolution_index = 0;
+    for (int i = 1; i <= number_of_pokemon; i++) {
+        while (rom[evo_offset] != 0) {
+            const Evolution &current_evolution = pokemon_evolutions[current_evolution_index];
+            switch (current_evolution.evolution_type) {
+                case EvolutionType::EVOLVE_LEVEL: {
+                    // EVOLVE_LEVEL, level, species
+                    rom[evo_offset + 2] = current_evolution.pokemon_to_evolve_to;
+                    evo_offset += 3;
+                    break;
+                }
+                case EvolutionType::EVOLVE_ITEM: {
+                    // EVOLVE_ITEM, used item, species
+                    rom[evo_offset + 2] = current_evolution.pokemon_to_evolve_to;
+                    evo_offset += 3;
+                    break;
+                }
+                case EvolutionType::EVOLVE_TRADE: {
+                    // EVOLVE_TRADE, held item (or -1 for none), species
+                    rom[evo_offset + 2] = current_evolution.pokemon_to_evolve_to;
+                    evo_offset += 3;
+                    break;
+                }
+                case EvolutionType::EVOLVE_HAPPINESS: {
+                    // EVOLVE_HAPPINESS, TR_* constant (ANYTIME, MORNDAY, NITE), species
+                    rom[evo_offset + 2] = current_evolution.pokemon_to_evolve_to;
+                    evo_offset += 3;
+                    break;
+                }
+                case EvolutionType::EVOLVE_STAT: {
+                    // EVOLVE_STAT, level, ATK_*_DEF constant (LT, GT, EQ), species
+                    rom[evo_offset + 3] = current_evolution.pokemon_to_evolve_to;
+                    evo_offset += 4;
+                    break;
+                }
+
+            }
+        }
+        evo_offset++; // move by 1 to skip the 0
+        // skip over move learnset by finding next 0
+        while (rom[evo_offset] != 0) {
+            evo_offset++;
+        }
+        evo_offset++;
+        current_evolution_index++;
+        if (current_evolution_index >= pokemon_evolutions.size()) {
+            break;
+        }
+        // do evo stuff again
+    }
+}
+
 void Rom::shuffle_stats() {
+    // TODO: Does this actually get wrote back to ROM at any point?
     std::shuffle(pokemon_stats.begin(), pokemon_stats.end(), rng);
     for (int i = 0; i < number_of_pokemon; i++) {
         pokemon[i].stats = pokemon_stats[i];
@@ -192,7 +261,7 @@ void Rom::populate_pokemon_evolutions() {
     // Evolutions and attacks are grouped together since they're both checked at level-up. from https://github.com/pret/pokegold/blob/master/data/pokemon/evos_attacks_pointers.asm;
     // Move learnset (in increasing level order):
     // level, move
-    for (int i = 0; i < number_of_pokemon; i++) {
+    for (int i = 1; i <= number_of_pokemon; i++) {
         // evolution_type 0 means no more evolutions for that pokemon
         unsigned int evolution_type = rom[evo_offset];
         while (evolution_type != 0) {
@@ -205,7 +274,7 @@ void Rom::populate_pokemon_evolutions() {
                 case EvolutionType::EVOLVE_LEVEL: {
                     // EVOLVE_LEVEL, level, species
                     unsigned int evolve_level = rom[evo_offset + 1];
-                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 2] - 1;
+                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 2];
                     evolution.evolution_type = EvolutionType::EVOLVE_LEVEL;
                     evolution.level_to_evolve = evolve_level;
                     evolution.pokemon_to_evolve_to = pokemon_to_evolve_to;
@@ -214,8 +283,8 @@ void Rom::populate_pokemon_evolutions() {
                 }
                 case EvolutionType::EVOLVE_ITEM: {
                     // EVOLVE_ITEM, used item, species
-                    unsigned int item_id_to_evolve = rom[evo_offset + 1] - 1;
-                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 2] - 1;
+                    unsigned int item_id_to_evolve = rom[evo_offset + 1];
+                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 2];
                     evolution.evolution_type = EvolutionType::EVOLVE_ITEM;
                     evolution.item_id_to_evolve = item_id_to_evolve;
                     evolution.pokemon_to_evolve_to = pokemon_to_evolve_to;
@@ -224,8 +293,8 @@ void Rom::populate_pokemon_evolutions() {
                 }
                 case EvolutionType::EVOLVE_TRADE: {
                     // EVOLVE_TRADE, held item (or -1 for none), species
-                    unsigned int item_id_to_evolve = rom[evo_offset + 1] - 1;
-                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 2] - 1;
+                    unsigned int item_id_to_evolve = rom[evo_offset + 1];
+                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 2];
                     evolution.evolution_type = EvolutionType::EVOLVE_TRADE;
                     evolution.item_id_to_evolve = item_id_to_evolve;
                     evolution.pokemon_to_evolve_to = pokemon_to_evolve_to;
@@ -235,7 +304,7 @@ void Rom::populate_pokemon_evolutions() {
                 case EvolutionType::EVOLVE_HAPPINESS: {
                     // EVOLVE_HAPPINESS, TR_* constant (ANYTIME, MORNDAY, NITE), species
                     unsigned int happiness_time = rom[evo_offset + 1];
-                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 2] - 1;
+                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 2];
                     evolution.evolution_type = EvolutionType::EVOLVE_HAPPINESS;
                     evolution.happiness_condition = static_cast<EvolutionHappinessCondition>(happiness_time);
                     evolution.pokemon_to_evolve_to = pokemon_to_evolve_to;
@@ -246,7 +315,7 @@ void Rom::populate_pokemon_evolutions() {
                     // EVOLVE_STAT, level, ATK_*_DEF constant (LT, GT, EQ), species
                     unsigned int level_to_evolve = rom[evo_offset + 1];
                     unsigned int stat_condition = rom[evo_offset + 2];
-                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 3] - 1;
+                    unsigned int pokemon_to_evolve_to = rom[evo_offset + 3];
                     evolution.evolution_type = EvolutionType::EVOLVE_STAT;
                     evolution.level_to_evolve = level_to_evolve;
                     evolution.stat_condition = static_cast<EvolutionStatCondition>(stat_condition);
@@ -259,6 +328,7 @@ void Rom::populate_pokemon_evolutions() {
                               << evolution_type << '\n';
                     break;
             }
+            assert(evolution.pokemon_to_evolve_to != 0);
             pokemon_evolutions.push_back(evolution);
             evolution_type = rom[evo_offset];
         }
@@ -374,7 +444,7 @@ void Rom::randomize_land_encounters(int offset) {
                 int time_of_day_offset = i * land_encounters_number * 2;
                 //Multiply by two here since each pokemon entry is two bytes (see above)
                 int pokemon_offset = j * 2;
-                std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+                std::uniform_int_distribution<unsigned int> distribution(1, number_of_pokemon);
                 uint8_t pokemonID = distribution(rng);
                 rom[offset + info_offset + time_of_day_offset + pokemon_offset + level_offset] = pokemonID;
 
@@ -398,7 +468,7 @@ void Rom::randomize_water_encounters(int offset) {
         for (int j = 0; j < water_encounters_number; j++) {
             //Multiply by two here since each pokemon entry is two bytes (see above)
             int pokemon_offset = j * 2;
-            std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+            std::uniform_int_distribution<unsigned int> distribution(1, number_of_pokemon);
             uint8_t pokemonID = distribution(rng);
             rom[offset + info_offset + pokemon_offset + level_offset] = pokemonID;
 
@@ -421,7 +491,7 @@ void Rom::randomize_fishing_encounters() {
     for (int i = 0; i < fishing_group_count; i++) {
         const int pokemon_per_fishing_group = 11;
         for (int j = 0; j < pokemon_per_fishing_group; j++) {
-            std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+            std::uniform_int_distribution<unsigned int> distribution(1, number_of_pokemon);
             uint8_t pokemonID = distribution(rng);
             rom[offset] = pokemonID;
             //+2 to pass over level and extra byte
@@ -453,8 +523,10 @@ void Rom::randomize_trainers() {
     const int trainer_offset = 0x399C2;
     int offset = trainer_offset;
     //Number of trainers in each class
-    const int trainer_class_amounts[] = {1, 1, 1, 1, 1, 1, 1, 1, 15, 0, 1, 3, 1, 1, 1, 1, 1, 1, 1, 5, 1, 12, 18, 19, 15,
-                                         1, 19, 20, 16, 13, 31, 5, 2, 3, 1, 14, 22, 21, 19, 12, 12, 6, 2, 20, 9, 1, 3,
+    const int trainer_class_amounts[] = {1, 1, 1, 1, 1, 1, 1, 1, 15, 0, 1, 3, 1, 1, 1, 1, 1, 1, 1, 5, 1, 12, 18, 19,
+                                         15,
+                                         1, 19, 20, 16, 13, 31, 5, 2, 3, 1, 14, 22, 21, 19, 12, 12, 6, 2, 20, 9, 1,
+                                         3,
                                          8, 5, 9, 4, 12, 21, 19, 2, 9, 7, 3, 12, 6, 8, 5, 1, 1, 2, 5};
     for (int limit : trainer_class_amounts) {
         for (int trainer_num = 0; trainer_num < limit; trainer_num++) {
@@ -468,7 +540,7 @@ void Rom::randomize_trainers() {
             //0xFF is end of the trainer
             while (rom[offset] != 0xFF) {
                 //Level at rom[offset], pokemonID at rom[offset + 1]
-                std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+                std::uniform_int_distribution<unsigned int> distribution(1, number_of_pokemon);
                 unsigned int new_id = distribution(rng);
                 rom[offset + 1] = new_id;
                 offset += 2;
@@ -507,7 +579,7 @@ void Rom::randomize_gift_pokemon() {
     gift_pokemon_locations.push_back(tyrogue_mem_locations);
 
     for (int location: gift_pokemon_locations) {
-        std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+        std::uniform_int_distribution<unsigned int> distribution(1, number_of_pokemon);
         uint8_t pokemonID = distribution(rng);
         rom[location] = pokemonID;
     }
@@ -533,7 +605,7 @@ void Rom::randomize_game_corner_pokemon() {
             porygon_mem_locations};
 
     for (const std::vector<int> &pokemon_locations: game_corner_pokemon_locations) {
-        std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+        std::uniform_int_distribution<unsigned int> distribution(1, number_of_pokemon);
         uint8_t pokemonID = distribution(rng);
         Pokemon poke = pokemon[pokemonID - 1];
         int count = 0;
@@ -586,7 +658,7 @@ void Rom::randomize_static_pokemon() {
     static_pokemon_locations.push_back(electrode3_mem_locations);
 
     for (const std::vector<int> &pokemon_locations: static_pokemon_locations) {
-        std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+        std::uniform_int_distribution<unsigned int> distribution(1, number_of_pokemon);
         uint8_t pokemonID = distribution(rng);
         for (int location: pokemon_locations) {
             rom[location] = pokemonID;

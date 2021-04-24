@@ -93,4 +93,6 @@ private:
     void shuffle_stats();
 
     void populate_pokemon_evolutions();
+
+    void randomize_evolutions();
 };
