@@ -26,8 +26,9 @@ void Rom::run() {
     populate_items();
     items.populate_allowed_items(load_banned_items());
 
+    // TODO: Add flags for each option
     randomize_intro_pokemon();
-    randomize_starters();
+    randomize_starters(); // TODO: Allow chosing of starters
     randomize_land_encounters(land_offset_johto);
     randomize_land_encounters(land_offset_kanto);
     randomize_water_encounters(water_offset_johto);
@@ -37,6 +38,7 @@ void Rom::run() {
     randomize_gift_pokemon();
     randomize_static_pokemon();
     randomize_game_corner_pokemon();
+//    shuffle_stats(); // TODO: Add flag for this
 }
 
 void Rom::randomize_starters() {
@@ -84,8 +86,10 @@ void Rom::randomize_intro_pokemon() {
 }
 
 void Rom::shuffle_stats() {
-    auto rng = std::default_random_engine{};
     std::shuffle(pokemon_stats.begin(), pokemon_stats.end(), rng);
+    for (int i = 0; i < number_of_pokemon; i++) {
+        pokemon[i].stats = pokemon_stats[i];
+    }
 }
 
 bool Rom::load(const std::string &romFilename) {
