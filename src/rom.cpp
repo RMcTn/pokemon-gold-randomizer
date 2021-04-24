@@ -12,13 +12,12 @@
 
 Rom::Rom() : items(number_of_items) {
     seed = std::time(nullptr);
-    std::srand(seed);
+    rng = std::mt19937(seed);
 }
 
 Rom::Rom(int seed) : items(number_of_items) {
-    // TODO: use rng engine instead of srand
     this->seed = seed;
-    std::srand(seed);
+    rng = std::mt19937(seed);
 }
 
 void Rom::run() {
@@ -52,7 +51,8 @@ void Rom::randomize_starters() {
             {0x180150, 0x180152, 0x180169, 0x180174}};        //Chikorita
     unsigned int const STARTER_TEXT_POSITIONS[] = {0x1805F4, 0x180620, 0x18064D};
     for (int i = 0; i < 3; i++) {
-        uint8_t pokemonID = std::rand() % number_of_pokemon;
+        std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+        uint8_t pokemonID = distribution(rng);
         for (unsigned int position : STARTER_POSITIONS[i]) {
             //TODO: Noticed a weird sprite when unown was picked. Look into it
             rom[position] = pokemonID;
@@ -75,7 +75,8 @@ void Rom::randomize_starters() {
 }
 
 void Rom::randomize_intro_pokemon() {
-    uint8_t pokemonID = std::rand() % number_of_pokemon;
+    std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+    uint8_t pokemonID = distribution(rng);
     const int INTRO_POKEMON_POSITION = 0x5FDE;
     const int INTRO_POKEMON_CRY_POSITION = 0X6061;
     rom[INTRO_POKEMON_POSITION] = pokemonID;
@@ -297,7 +298,8 @@ void Rom::randomize_land_encounters(int offset) {
                 int time_of_day_offset = i * land_encounters_number * 2;
                 //Multiply by two here since each pokemon entry is two bytes (see above)
                 int pokemon_offset = j * 2;
-                uint8_t pokemonID = std::rand() % number_of_pokemon;
+                std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+                uint8_t pokemonID = distribution(rng);
                 rom[offset + info_offset + time_of_day_offset + pokemon_offset + level_offset] = pokemonID;
 
             }
@@ -320,7 +322,8 @@ void Rom::randomize_water_encounters(int offset) {
         for (int j = 0; j < water_encounters_number; j++) {
             //Multiply by two here since each pokemon entry is two bytes (see above)
             int pokemon_offset = j * 2;
-            uint8_t pokemonID = std::rand() % number_of_pokemon;
+            std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+            uint8_t pokemonID = distribution(rng);
             rom[offset + info_offset + pokemon_offset + level_offset] = pokemonID;
 
         }
@@ -342,7 +345,8 @@ void Rom::randomize_fishing_encounters() {
     for (int i = 0; i < fishing_group_count; i++) {
         const int pokemon_per_fishing_group = 11;
         for (int j = 0; j < pokemon_per_fishing_group; j++) {
-            uint8_t pokemonID = std::rand() % number_of_pokemon;
+            std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+            uint8_t pokemonID = distribution(rng);
             rom[offset] = pokemonID;
             //+2 to pass over level and extra byte
             offset += 2;
@@ -388,7 +392,8 @@ void Rom::randomize_trainers() {
             //0xFF is end of the trainer
             while (rom[offset] != 0xFF) {
                 //Level at rom[offset], pokemonID at rom[offset + 1]
-                int new_id = std::rand() % number_of_pokemon;
+                std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+                unsigned int new_id = distribution(rng);
                 rom[offset + 1] = new_id;
                 offset += 2;
 
@@ -426,7 +431,8 @@ void Rom::randomize_gift_pokemon() {
     gift_pokemon_locations.push_back(tyrogue_mem_locations);
 
     for (int location: gift_pokemon_locations) {
-        uint8_t pokemonID = std::rand() % number_of_pokemon;
+        std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+        uint8_t pokemonID = distribution(rng);
         rom[location] = pokemonID;
     }
 }
@@ -451,7 +457,8 @@ void Rom::randomize_game_corner_pokemon() {
             porygon_mem_locations};
 
     for (const std::vector<int> &pokemon_locations: game_corner_pokemon_locations) {
-        uint8_t pokemonID = std::rand() % number_of_pokemon;
+        std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+        uint8_t pokemonID = distribution(rng);
         Pokemon poke = pokemon[pokemonID - 1];
         int count = 0;
         for (int location: pokemon_locations) {
@@ -503,7 +510,8 @@ void Rom::randomize_static_pokemon() {
     static_pokemon_locations.push_back(electrode3_mem_locations);
 
     for (const std::vector<int> &pokemon_locations: static_pokemon_locations) {
-        uint8_t pokemonID = std::rand() % number_of_pokemon;
+        std::uniform_int_distribution<unsigned int> distribution(0, number_of_pokemon);
+        uint8_t pokemonID = distribution(rng);
         for (int location: pokemon_locations) {
             rom[location] = pokemonID;
         }
@@ -601,6 +609,8 @@ void Rom::randomize_pokemon_palettes() {
     const int pokemon_palette_start = 0xAD45;
     const int pokemon_palette_end = 0xB53D;
     for (int i = pokemon_palette_start; i < pokemon_palette_end; i++) {
-        rom[i] = std::rand() % UINT8_MAX;
+        std::uniform_int_distribution<unsigned int> distribution(0, UINT8_MAX);
+        uint8_t val = distribution(rng);
+        rom[i] = val;
     }
 }

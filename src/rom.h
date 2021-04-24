@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#include <random>
 
 class Rom {
     //TODO: Need to randomize headbutt pokemon
@@ -49,6 +50,7 @@ private:
     const int water_offset_kanto = 0x2BD43;
 
     int seed;
+    std::mt19937 rng;
     std::fstream file;
     std::vector<uint8_t> rom;
     //Mapping of english characters to the characters used in gen2 (no unordinary characters for now)
