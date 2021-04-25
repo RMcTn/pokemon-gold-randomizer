@@ -40,6 +40,7 @@ void Rom::run() {
     randomize_static_pokemon();
     randomize_game_corner_pokemon();
     randomize_evolutions();
+    // TODO: Randomize trade pokemon
 //    shuffle_stats(); // TODO: Add flag for this
 }
 
@@ -560,7 +561,8 @@ void Rom::randomize_trainers() {
 
                 if (has_custom_moves) {
                     //TODO: Randomize moves
-                    //TODO: just set the has_custom_moves flag to false?
+                    //TODO: just set the has_custom_moves flag to false? - wont work
+                    // best solution is get available moves for pokemon at that level, and fill in most recent 4?
                     //1 byte per move
                     offset += 4;
 
