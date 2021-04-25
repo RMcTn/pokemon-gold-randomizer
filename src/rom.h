@@ -2,6 +2,7 @@
 #include "items.h"
 #include "pokemon.h"
 #include "evolution.h"
+#include "move.h"
 
 #include <fstream>
 #include <vector>
@@ -71,6 +72,8 @@ private:
     std::vector<Pokemon> pokemon;
     std::vector<PokemonStats> pokemon_stats;
     std::vector<Evolution> pokemon_evolutions;
+    std::vector<std::vector<Move>> pokemon_movelists;
+
     const int number_of_items = 255;
     Items items;
 
@@ -92,7 +95,7 @@ private:
 
     void shuffle_stats();
 
-    void populate_pokemon_evolutions();
+    void populate_pokemon_evolutions_and_moveslist();
 
     void randomize_evolutions();
 };

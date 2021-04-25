@@ -261,15 +261,13 @@ void Rom::populate_pokemon() {
         pokemon.push_back(new_pokemon);
     }
     populate_pokemon_stats();
-    populate_pokemon_evolutions();
+    populate_pokemon_evolutions_and_moveslist();
 }
 
-void Rom::populate_pokemon_evolutions() {
+void Rom::populate_pokemon_evolutions_and_moveslist() {
     const unsigned int base_evolutions_offset = 0x429B3;
     unsigned int evo_offset = base_evolutions_offset;
     // Evolutions and attacks are grouped together since they're both checked at level-up. from https://github.com/pret/pokegold/blob/master/data/pokemon/evos_attacks_pointers.asm;
-    // Move learnset (in increasing level order):
-    // level, move
     for (int i = 1; i <= number_of_pokemon; i++) {
         // evolution_type 0 means no more evolutions for that pokemon
         unsigned int evolution_type = rom[evo_offset];
@@ -277,9 +275,6 @@ void Rom::populate_pokemon_evolutions() {
             Evolution evolution{};
             evolution.pokemon = i;
             switch (evolution_type) {
-                // Options for increasing offset:
-                // increase offset in each switch branch for what's relevant,
-                // then loop till finding the next 00 (end of moveset)
                 case EvolutionType::EVOLVE_LEVEL: {
                     // EVOLVE_LEVEL, level, species
                     unsigned int evolve_level = rom[evo_offset + 1];
@@ -342,10 +337,18 @@ void Rom::populate_pokemon_evolutions() {
             evolution_type = rom[evo_offset];
         }
         evo_offset++; // move by 1 to skip the 0
-        // skip over move learnset by finding next 0
+        // populate pokemon's learnset
+        std::vector<Move> current_pokemon_moveslist;
         while (rom[evo_offset] != 0) {
-            evo_offset++;
+            // Move learnset (in increasing level order):
+            // level, move
+            Move move{};
+            move.level_to_learn = rom[evo_offset];
+            move.move_id = rom[evo_offset + 1];
+            current_pokemon_moveslist.push_back(move);
+            evo_offset += 2;
         }
+        pokemon_movelists.push_back(current_pokemon_moveslist);
         evo_offset++;
         // do evo stuff again
     }
