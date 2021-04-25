@@ -552,9 +552,10 @@ void Rom::randomize_trainers() {
             //0xFF is end of the trainer
             while (rom[offset] != 0xFF) {
                 //Level at rom[offset], pokemonID at rom[offset + 1]
+                unsigned int pokemon_level = rom[offset];
                 std::uniform_int_distribution<unsigned int> distribution(1, number_of_pokemon);
-                unsigned int new_id = distribution(rng);
-                rom[offset + 1] = new_id;
+                unsigned int new_pokemon_id = distribution(rng);
+                rom[offset + 1] = new_pokemon_id;
                 offset += 2;
 
                 if (has_custom_held_item) {
@@ -563,12 +564,26 @@ void Rom::randomize_trainers() {
                 }
 
                 if (has_custom_moves) {
-                    //TODO: Randomize moves
-                    //TODO: just set the has_custom_moves flag to false? - wont work
-                    // best solution is get available moves for pokemon at that level, and fill in most recent 4?
+                    auto moveslist = pokemon_movelists[new_pokemon_id - 1];
+                    // Populate with first learnable move as a default
+                    std::vector<Move> new_moves{moveslist[0], moveslist[0], moveslist[0], moveslist[0]};
+                    int move_count = 0;
+                    for (int i = moveslist.size() - 1; i >= 0; i--) {
+                        if (moveslist[i].level_to_learn <= pokemon_level) {
+                            new_moves[move_count] = moveslist[i];
+                            move_count++;
+                            if (move_count >= 4) {
+                                break;
+                            }
+                        }
+                    }
                     //1 byte per move
-                    offset += 4;
+                    rom[offset] = new_moves[0].move_id;
+                    rom[offset + 1] = new_moves[1].move_id;
+                    rom[offset + 2] = new_moves[2].move_id;
+                    rom[offset + 3] = new_moves[3].move_id;
 
+                    offset += 4;
                 }
 
             }
