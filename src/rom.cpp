@@ -27,6 +27,7 @@ void Rom::run() {
     populate_items();
     items.populate_allowed_items(load_banned_items());
 
+    // TODO: Override trade evolving pokemon
     // TODO: Add flags for each option
     randomize_intro_pokemon();
     randomize_starters(); // TODO: Allow choosing of starters
@@ -40,6 +41,7 @@ void Rom::run() {
     randomize_static_pokemon();
     randomize_game_corner_pokemon();
     randomize_evolutions();
+    randomize_static_item_locations();
     // TODO: Randomize trade pokemon
 //    shuffle_stats(); // TODO: Add flag for this
 }
@@ -151,6 +153,163 @@ void Rom::randomize_evolutions() {
         }
         // do evo stuff again
     }
+}
+
+void Rom::randomize_map_items(unsigned int map_offset) {
+    /*
+     // See https://datacrystal.romhacking.net/wiki/Pok%C3%A9mon_Gold_and_Silver:Notes
+        SECONDARY MAP HEADER
+        1 byte  - ID of block displayed "outside" of map
+        1 byte  - Map height
+        1 byte  - Map width
+        1 byte  - Bank of block data
+        2 bytes - Pointer to block data (little-endian)
+        1 byte  - Bank of scripts and events headers
+        2 bytes - Pointer to scripts header
+        2 bytes - Pointer to events header
+        1 byte  - Bitfield of which map connections are enabled
+        Bits : 0 - 0 - 0 - 0 - NORTH - SOUTH - WEST - EAST
+
+        // See https://hax.iimarckus.org/files/scriptingcodes_eng.htm for event structure
+     */
+    std::uniform_int_distribution<unsigned int> distribution(0, items.size());
+    const int gameboy_bank_size = 0x4000; // TODO: Move constants to header file
+    // TODO: Keep note of what maps we're processing/have processed
+    unsigned int map_id = rom[map_offset + 5];
+    unsigned int secondary_header_bank = rom[map_offset];
+    unsigned int secondary_header_pointer =
+            rom[map_offset + 3] |
+            (rom[map_offset + 4] << 8);
+    unsigned int secondary_header_offset =
+            (secondary_header_pointer % gameboy_bank_size) +
+            secondary_header_bank * gameboy_bank_size;
+    // Use secondary header offset to get event header offset (see above for memory layout)
+
+    unsigned int event_header_bank = rom[secondary_header_offset + 6];
+    unsigned int event_header_pointer =
+            rom[secondary_header_offset + 9] |
+            (rom[secondary_header_offset + 10] << 8);
+    unsigned int event_header_offset =
+            (event_header_pointer % gameboy_bank_size) +
+            event_header_bank * gameboy_bank_size;
+    // Skip filler
+    event_header_offset += 2;
+    const int warp_count = rom[event_header_offset];
+    event_header_offset++;
+    const int warp_size = 5;
+    event_header_offset += warp_count * warp_size;
+
+    const int trigger_count = rom[event_header_offset];
+    event_header_offset++;
+    const int trigger_size = 8;
+    event_header_offset += trigger_count * trigger_size;
+
+    const int signpost_count = rom[event_header_offset];
+    event_header_offset++;
+    const int hidden_item_type = 7;
+    const int signpost_size = 5;
+    // Hidden items are treated as signposts
+    for (int signpost = 0; signpost < signpost_count; signpost++) {
+        int signpost_type = rom[event_header_offset + (signpost * signpost_size) + 2];
+        // See https://hax.iimarckus.org/files/scriptingcodes_eng.htm Events signpost section
+        if (signpost_type == hidden_item_type) {
+            unsigned int signpost_pointer =
+                    rom[event_header_offset + signpost * signpost_size + 3] |
+                    (rom[event_header_offset + signpost * signpost_size + 4] << 8);
+            unsigned int signpost_offset =
+                    (signpost_pointer % gameboy_bank_size) +
+                    event_header_bank * gameboy_bank_size;
+
+            rom[signpost_offset + 2] = distribution(rng);
+
+        }
+    }
+
+    event_header_offset += signpost_count * signpost_size;
+
+    const int people_count = rom[event_header_offset];
+    event_header_offset++;
+    const int people_size = 13;
+    // Visible pokeballs on the ground are treated as people events;
+    for (int person = 0; person < people_count; person++) {
+        const int person_color_and_function_info = rom[event_header_offset + person * people_size + 7];
+        // bottom bit of color and function info determines if an item is given or not
+        // See https://hax.iimarckus.org/files/scriptingcodes_eng.htm People events section
+        if ((person_color_and_function_info & 1) == 1) {
+            unsigned int person_pointer =
+                    rom[event_header_offset + person * people_size + 9] |
+                    (rom[event_header_offset + person * people_size + 10] << 8);
+            unsigned int person_offset = (person_pointer % gameboy_bank_size) +
+                                         event_header_bank * gameboy_bank_size;
+            rom[person_offset] = distribution(rng);
+        }
+    }
+}
+
+void Rom::randomize_static_item_locations() {
+    /*
+    // https://datacrystal.romhacking.net/wiki/Pok%C3%A9mon_Gold_and_Silver:ROM_map#Map_Pointers
+     // See https://datacrystal.romhacking.net/wiki/Pok%C3%A9mon_Gold_and_Silver:Notes
+     // See https://hax.iimarckus.org/files/scriptingcodes_eng.htm
+
+        PRIMARY MAP HEADER
+        1 byte  - Bank of second part
+        1 byte  - Tileset ID
+        1 byte  - Permission (?)
+        2 bytes - Pointer to secondary header (little-endian)
+        1 byte  - Location ID
+        1 byte  - Music ID
+        1 byte  - Upper nibble = 1 if no phone signal
+                  Lower nibble = Day/Night-type palette
+        1 byte  - Fishing group
+
+
+        // TODO: Could randomize music ID for each map as well
+     */
+
+
+    const unsigned int map_banks_offset = 0x940ED;
+    const unsigned int map_group_count = 26;
+    const unsigned int gameboy_bank_size = 0x4000;
+
+    std::vector<unsigned int> map_primary_header_offsets;
+    unsigned int map_primary_headers_bank = map_banks_offset / gameboy_bank_size;
+    for (int i = 0; i < map_group_count; i++) {
+        unsigned int current_map_primary_header_pointer = (rom[map_banks_offset + (i * 2)]) |
+                                                          (rom[map_banks_offset + (i * 2) + 1] << 8);
+        unsigned int current_map_primary_header_offset = (current_map_primary_header_pointer % gameboy_bank_size) +
+                                                         map_primary_headers_bank * gameboy_bank_size;
+        map_primary_header_offsets.push_back(current_map_primary_header_offset);
+    }
+
+    std::vector<unsigned int> map_ids;
+    for (int map_group = 0; map_group < map_primary_header_offsets.size(); map_group++) {
+        unsigned int map_primary_header_offset = map_primary_header_offsets[map_group];
+        unsigned int max_map_offset;
+        if (map_group + 1 >= map_primary_header_offsets.size()) {
+            const int map_header_bank = map_banks_offset / gameboy_bank_size;
+            max_map_offset = (map_header_bank + 1) * gameboy_bank_size;
+        } else {
+            max_map_offset = map_primary_header_offsets[map_group + 1];
+        }
+
+        const unsigned int maps_in_last_map_group = 11;
+        unsigned int max_map = (map_group == map_group_count - 1) ? maps_in_last_map_group
+                                                                  : std::numeric_limits<int>::max();
+        unsigned int current_map = 0;
+
+        while (map_primary_header_offset < max_map_offset && current_map < max_map) {
+
+            // TODO: Populate a map of these map IDs to names so we can verify
+            randomize_map_items(map_primary_header_offset);
+
+            map_primary_header_offset += 9;
+            current_map++;
+        }
+
+
+    }
+
 }
 
 void Rom::shuffle_stats() {

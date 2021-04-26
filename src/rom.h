@@ -98,4 +98,8 @@ private:
     void populate_pokemon_evolutions_and_moveslist();
 
     void randomize_evolutions();
+
+    void randomize_static_item_locations();
+
+    void randomize_map_items(unsigned int map_offset);
 };
