@@ -1,7 +1,14 @@
 #pragma once
 
 #include <string>
-#include "pokemon_stats.h"
+struct PokemonStats {
+  unsigned int hp;
+  unsigned int attack;
+  unsigned int defence;
+  unsigned int speed;
+  unsigned int special_attack;
+  unsigned int special_defence;
+};
 
 class Pokemon {
 public:
