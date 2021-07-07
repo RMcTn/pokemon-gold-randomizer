@@ -11,8 +11,9 @@
  *
  * Item containers will be loaded and filled at startup
  */
-class Items {
-public:
+struct Items {
+    // TODO: Not sure what was going on when this was made, but this needs cleaned up
+
     Items(int number_of_items) { this->number_of_items = number_of_items; }
 
     Item get_item(int id) { return items[id]; }
@@ -25,13 +26,16 @@ public:
 
     void set_allowed_items(std::vector<Item> items) { this->allowed_items = items; }
 
-    void populate_allowed_items(std::vector<Item> banned_items);
+    void populate_allowed_items(const std::vector<Item> &banned_items);
 
     size_t size() {
         return items.size();
     }
 
-private:
+    size_t allowed_items_size() {
+        return allowed_items.size();
+    }
+
     int number_of_items;
     std::vector<Item> items;
     std::vector<Item> allowed_items;        //Expected to not have any gaps

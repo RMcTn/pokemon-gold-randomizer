@@ -173,7 +173,7 @@ void Rom::randomize_map_items(unsigned int map_offset) {
 
         // See https://hax.iimarckus.org/files/scriptingcodes_eng.htm for event structure
      */
-    std::uniform_int_distribution<unsigned int> distribution(0, items.size());
+    std::uniform_int_distribution<unsigned int> distribution(0, items.allowed_items_size() - 1);
     // TODO: Keep note of what maps we're processing/have processed
     unsigned int map_id = rom[map_offset + 5];
     unsigned int secondary_header_bank = rom[map_offset];
@@ -220,7 +220,7 @@ void Rom::randomize_map_items(unsigned int map_offset) {
                     (signpost_pointer % GAMEBOY_BANK_SIZE) +
                     event_header_bank * GAMEBOY_BANK_SIZE;
 
-            rom[signpost_offset + 2] = distribution(rng);
+            rom[signpost_offset + 2] = items.allowed_items[distribution(rng)].get_id();
 
         }
     }
@@ -241,7 +241,7 @@ void Rom::randomize_map_items(unsigned int map_offset) {
                     (rom[event_header_offset + person * people_size + 10] << 8);
             unsigned int person_offset = (person_pointer % GAMEBOY_BANK_SIZE) +
                                          event_header_bank * GAMEBOY_BANK_SIZE;
-            rom[person_offset] = distribution(rng);
+            rom[person_offset] = items.allowed_items[distribution(rng)].get_id();
         }
     }
 }
