@@ -1,4 +1,5 @@
 #include "rom.h"
+#include "constants.h"
 
 #include <cstdint>
 #include <cstdlib>
@@ -173,7 +174,6 @@ void Rom::randomize_map_items(unsigned int map_offset) {
         // See https://hax.iimarckus.org/files/scriptingcodes_eng.htm for event structure
      */
     std::uniform_int_distribution<unsigned int> distribution(0, items.size());
-    const int gameboy_bank_size = 0x4000; // TODO: Move constants to header file
     // TODO: Keep note of what maps we're processing/have processed
     unsigned int map_id = rom[map_offset + 5];
     unsigned int secondary_header_bank = rom[map_offset];
@@ -181,8 +181,8 @@ void Rom::randomize_map_items(unsigned int map_offset) {
             rom[map_offset + 3] |
             (rom[map_offset + 4] << 8);
     unsigned int secondary_header_offset =
-            (secondary_header_pointer % gameboy_bank_size) +
-            secondary_header_bank * gameboy_bank_size;
+            (secondary_header_pointer % GAMEBOY_BANK_SIZE) +
+            secondary_header_bank * GAMEBOY_BANK_SIZE;
     // Use secondary header offset to get event header offset (see above for memory layout)
 
     unsigned int event_header_bank = rom[secondary_header_offset + 6];
@@ -190,8 +190,8 @@ void Rom::randomize_map_items(unsigned int map_offset) {
             rom[secondary_header_offset + 9] |
             (rom[secondary_header_offset + 10] << 8);
     unsigned int event_header_offset =
-            (event_header_pointer % gameboy_bank_size) +
-            event_header_bank * gameboy_bank_size;
+            (event_header_pointer % GAMEBOY_BANK_SIZE) +
+            event_header_bank * GAMEBOY_BANK_SIZE;
     // Skip filler
     event_header_offset += 2;
     const int warp_count = rom[event_header_offset];
@@ -217,8 +217,8 @@ void Rom::randomize_map_items(unsigned int map_offset) {
                     rom[event_header_offset + signpost * signpost_size + 3] |
                     (rom[event_header_offset + signpost * signpost_size + 4] << 8);
             unsigned int signpost_offset =
-                    (signpost_pointer % gameboy_bank_size) +
-                    event_header_bank * gameboy_bank_size;
+                    (signpost_pointer % GAMEBOY_BANK_SIZE) +
+                    event_header_bank * GAMEBOY_BANK_SIZE;
 
             rom[signpost_offset + 2] = distribution(rng);
 
@@ -239,8 +239,8 @@ void Rom::randomize_map_items(unsigned int map_offset) {
             unsigned int person_pointer =
                     rom[event_header_offset + person * people_size + 9] |
                     (rom[event_header_offset + person * people_size + 10] << 8);
-            unsigned int person_offset = (person_pointer % gameboy_bank_size) +
-                                         event_header_bank * gameboy_bank_size;
+            unsigned int person_offset = (person_pointer % GAMEBOY_BANK_SIZE) +
+                                         event_header_bank * GAMEBOY_BANK_SIZE;
             rom[person_offset] = distribution(rng);
         }
     }
@@ -270,15 +270,14 @@ void Rom::randomize_static_item_locations() {
 
     const unsigned int map_banks_offset = 0x940ED;
     const unsigned int map_group_count = 26;
-    const unsigned int gameboy_bank_size = 0x4000;
 
     std::vector<unsigned int> map_primary_header_offsets;
-    unsigned int map_primary_headers_bank = map_banks_offset / gameboy_bank_size;
+    unsigned int map_primary_headers_bank = map_banks_offset / GAMEBOY_BANK_SIZE;
     for (int i = 0; i < map_group_count; i++) {
         unsigned int current_map_primary_header_pointer = (rom[map_banks_offset + (i * 2)]) |
                                                           (rom[map_banks_offset + (i * 2) + 1] << 8);
-        unsigned int current_map_primary_header_offset = (current_map_primary_header_pointer % gameboy_bank_size) +
-                                                         map_primary_headers_bank * gameboy_bank_size;
+        unsigned int current_map_primary_header_offset = (current_map_primary_header_pointer % GAMEBOY_BANK_SIZE) +
+                                                         map_primary_headers_bank * GAMEBOY_BANK_SIZE;
         map_primary_header_offsets.push_back(current_map_primary_header_offset);
     }
 
@@ -287,8 +286,8 @@ void Rom::randomize_static_item_locations() {
         unsigned int map_primary_header_offset = map_primary_header_offsets[map_group];
         unsigned int max_map_offset;
         if (map_group + 1 >= map_primary_header_offsets.size()) {
-            const int map_header_bank = map_banks_offset / gameboy_bank_size;
-            max_map_offset = (map_header_bank + 1) * gameboy_bank_size;
+            const int map_header_bank = map_banks_offset / GAMEBOY_BANK_SIZE;
+            max_map_offset = (map_header_bank + 1) * GAMEBOY_BANK_SIZE;
         } else {
             max_map_offset = map_primary_header_offsets[map_group + 1];
         }
