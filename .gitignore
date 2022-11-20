@@ -1,3 +1,9 @@
 cmake-build*
 gold.gbc
 .idea/
+compile_commands.json
+cmake_install.cmake
+CMakeCache.txt
+CMakeFiles
+pokemon_randomizer
+.cache
