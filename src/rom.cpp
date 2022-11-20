@@ -610,22 +610,23 @@ void Rom::populate_character_mapping() {
     std::string hex_encoding;
     int line = 1;
     while (map_file >> character >> hex_encoding) {
-        try {
+        // try {
             int hex_value = std::stoi(hex_encoding, nullptr, 16);
             if (hex_value > UINT8_MAX) {
-                std::ostringstream err_msg;
-                err_msg << "Hex value in gen2_english at line " << line << " is too large. Max is " << UINT8_MAX;
-                throw std::out_of_range(err_msg.str());
+            	    // TODO commented out since switch console can't handle exceptions
+                // std::ostringstream err_msg;
+                // err_msg << "Hex value in gen2_english at line " << line << " is too large. Max is " << UINT8_MAX;
+                // throw std::out_of_range(err_msg.str());
             }
             character_mapping.insert(std::pair<uint8_t, int>(character, hex_value));
-        } catch (std::invalid_argument &e) {
-            std::cout << "Invalid hex value in gen2_english file at line " << line << "\n";
-            std::cout << "No randomization will take place\n";
-            exit(EXIT_FAILURE);
-        } catch (std::out_of_range &e) {
-            std::cout << e.what() << "\n";
-            exit(EXIT_FAILURE);
-        }
+        // } catch (std::invalid_argument &e) {
+        //     std::cout << "Invalid hex value in gen2_english file at line " << line << "\n";
+        //     std::cout << "No randomization will take place\n";
+        //     exit(EXIT_FAILURE);
+        // } catch (std::out_of_range &e) {
+        //     std::cout << e.what() << "\n";
+        //     exit(EXIT_FAILURE);
+        // }
     }
 }
 
@@ -954,25 +955,25 @@ std::vector<Item> Rom::load_banned_items() {
     std::string line;
     int line_number = 1;
     while (banned_item_file >> line) {
-        try {
+        // try {
             int item_id = std::stoi(line, nullptr);
             if (item_id > UINT8_MAX) {
-                std::ostringstream err_msg;
-                err_msg << "ID " << line << " at line number " << line_number << " in " << filename
-                        << " is too large. Max is " << UINT8_MAX;
-                throw std::out_of_range(err_msg.str());
+            	    // TODO commented out error stuff since switch console won't handle exceptions
+                // std::ostringstream err_msg;
+                // err_msg << "ID " << line << " at line number " << line_number << " in " << filename
+                //         << " is too large. Max is " << UINT8_MAX;
+		// std::cerr << err_msg << "\n";
+		// std::cerr << "Falling back on default banned item list\n";
+		printf("ID %d at line number %d in %s is too large. Max is %d\n", line, line_number, filename, UINT8_MAX);
+		return default_banned_items;
             }
             banned_items.push_back(items.get_item(item_id));
             line_number++;
-        } catch (std::invalid_argument &e) {
-            std::cerr << "Invalid value in " << filename << " at line " << line_number << "\n";
-            std::cerr << "Falling back on default banned item list\n";
-            return default_banned_items;
-        } catch (std::out_of_range &e) {
-            std::cerr << e.what() << "\n";
-            std::cerr << "Falling back on default banned item list\n";
-            return default_banned_items;
-        }
+        // } catch (std::invalid_argument &e) {
+        //     std::cerr << "Invalid value in " << filename << " at line " << line_number << "\n";
+        //     std::cerr << "Falling back on default banned item list\n";
+        //     return default_banned_items;
+        // }
     }
     banned_item_file.close();
     return banned_items;
