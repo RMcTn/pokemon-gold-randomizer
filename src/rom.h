@@ -82,6 +82,7 @@ private:
     void populate_items();
 
     void populate_character_mapping();
+    void populate_character_mapping_no_load();
 
     std::string translate_string_from_game(const std::string &text);
 

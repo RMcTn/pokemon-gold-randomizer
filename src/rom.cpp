@@ -23,7 +23,7 @@ Rom::Rom(int seed) : items(number_of_items) {
 }
 
 void Rom::run() {
-    populate_character_mapping();
+    populate_character_mapping_no_load();
     populate_pokemon();
     populate_items();
     items.populate_allowed_items(load_banned_items());
@@ -534,7 +534,73 @@ void Rom::write_string(unsigned int offset, const std::string &text, bool add_te
     }
 }
 
+void Rom::populate_character_mapping_no_load() {
+	// Just hard code the mapping rather than loading it (Unless more games/languages were supported)
+	// TODO check if this can be done at initializing rather than this monstrosity
+	character_mapping.insert(std::pair<uint8_t, int>('A', 0x80));
+	character_mapping.insert(std::pair<uint8_t, int>('A', 0x80));
+	character_mapping.insert(std::pair<uint8_t, int>('B', 0x81));
+	character_mapping.insert(std::pair<uint8_t, int>('C', 0x82));
+	character_mapping.insert(std::pair<uint8_t, int>('D', 0x83));
+	character_mapping.insert(std::pair<uint8_t, int>('E', 0x84));
+	character_mapping.insert(std::pair<uint8_t, int>('F', 0x85));
+	character_mapping.insert(std::pair<uint8_t, int>('G', 0x86));
+	character_mapping.insert(std::pair<uint8_t, int>('H', 0x87));
+	character_mapping.insert(std::pair<uint8_t, int>('I', 0x88));
+	character_mapping.insert(std::pair<uint8_t, int>('J', 0x89));
+	character_mapping.insert(std::pair<uint8_t, int>('K', 0x8A));
+	character_mapping.insert(std::pair<uint8_t, int>('L', 0x8B));
+	character_mapping.insert(std::pair<uint8_t, int>('M', 0x8C));
+	character_mapping.insert(std::pair<uint8_t, int>('N', 0x8D));
+	character_mapping.insert(std::pair<uint8_t, int>('O', 0x8E));
+	character_mapping.insert(std::pair<uint8_t, int>('P', 0x8F));
+	character_mapping.insert(std::pair<uint8_t, int>('Q', 0x90));
+	character_mapping.insert(std::pair<uint8_t, int>('R', 0x91));
+	character_mapping.insert(std::pair<uint8_t, int>('S', 0x92));
+	character_mapping.insert(std::pair<uint8_t, int>('T', 0x93));
+	character_mapping.insert(std::pair<uint8_t, int>('U', 0x94));
+	character_mapping.insert(std::pair<uint8_t, int>('V', 0x95));
+	character_mapping.insert(std::pair<uint8_t, int>('W', 0x96));
+	character_mapping.insert(std::pair<uint8_t, int>('X', 0x97));
+	character_mapping.insert(std::pair<uint8_t, int>('Y', 0x98));
+	character_mapping.insert(std::pair<uint8_t, int>('Z', 0x99));
+	character_mapping.insert(std::pair<uint8_t, int>('(', 0x9A));
+	character_mapping.insert(std::pair<uint8_t, int>(')', 0x9B));
+	character_mapping.insert(std::pair<uint8_t, int>(':', 0x9C));
+	character_mapping.insert(std::pair<uint8_t, int>(';', 0x9D));
+	character_mapping.insert(std::pair<uint8_t, int>('[', 0x9E));
+	character_mapping.insert(std::pair<uint8_t, int>(']', 0x9F));
+	character_mapping.insert(std::pair<uint8_t, int>('a', 0xA0));
+	character_mapping.insert(std::pair<uint8_t, int>('b', 0xA1));
+	character_mapping.insert(std::pair<uint8_t, int>('c', 0xA2));
+	character_mapping.insert(std::pair<uint8_t, int>('d', 0xA3));
+	character_mapping.insert(std::pair<uint8_t, int>('e', 0xA4));
+	character_mapping.insert(std::pair<uint8_t, int>('f', 0xA5));
+	character_mapping.insert(std::pair<uint8_t, int>('g', 0xA6));
+	character_mapping.insert(std::pair<uint8_t, int>('h', 0xA7));
+	character_mapping.insert(std::pair<uint8_t, int>('i', 0xA8));
+	character_mapping.insert(std::pair<uint8_t, int>('j', 0xA9));
+	character_mapping.insert(std::pair<uint8_t, int>('k', 0xAA));
+	character_mapping.insert(std::pair<uint8_t, int>('l', 0xAB));
+	character_mapping.insert(std::pair<uint8_t, int>('m', 0xAC));
+	character_mapping.insert(std::pair<uint8_t, int>('n', 0xAD));
+	character_mapping.insert(std::pair<uint8_t, int>('o', 0xAE));
+	character_mapping.insert(std::pair<uint8_t, int>('p', 0xAF));
+	character_mapping.insert(std::pair<uint8_t, int>('q', 0xB0));
+	character_mapping.insert(std::pair<uint8_t, int>('r', 0xB1));
+	character_mapping.insert(std::pair<uint8_t, int>('s', 0xB2));
+	character_mapping.insert(std::pair<uint8_t, int>('t', 0xB3));
+	character_mapping.insert(std::pair<uint8_t, int>('u', 0xB4));
+	character_mapping.insert(std::pair<uint8_t, int>('v', 0xB5));
+	character_mapping.insert(std::pair<uint8_t, int>('w', 0xB6));
+	character_mapping.insert(std::pair<uint8_t, int>('x', 0xB7));
+	character_mapping.insert(std::pair<uint8_t, int>('y', 0xB8));
+	character_mapping.insert(std::pair<uint8_t, int>('z', 0xB9));
+	character_mapping.insert(std::pair<uint8_t, int>('?', 0xE6));
+}
+
 void Rom::populate_character_mapping() {
+// Really no reason to have this loaded from a file right now, pointless 'future proofing'
     std::ifstream map_file("../mappings/gen2_english", std::ios::in);
     if (!map_file.is_open()) {
         std::cout << "Could not open gen2_english file\n";
