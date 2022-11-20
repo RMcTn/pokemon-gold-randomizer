@@ -3,6 +3,7 @@
 #include "pokemon.h"
 #include "evolution.h"
 #include "move.h"
+#include "randomization_options.h"
 
 #include <fstream>
 #include <vector>
@@ -43,7 +44,7 @@ public:
 
     bool save();
 
-    void run();    //Just a driver function whilst functionality is being built
+    void run(std::vector<RandomizationOptions> &randomization_options);    //Just a driver function whilst functionality is being built
 
 private:
     const int land_offset_johto = 0x2AB35;
@@ -72,7 +73,7 @@ private:
     std::vector<Pokemon> pokemon;
     std::vector<PokemonStats> pokemon_stats;
     std::vector<Evolution> pokemon_evolutions;
-    std::vector<std::vector<Move>> pokemon_movelists;
+    std::vector<std::vector<Move> > pokemon_movelists;
 
     const int number_of_items = 255;
     Items items;

@@ -1,5 +1,6 @@
 #include "rom.h"
 #include "constants.h"
+#include "randomization_options.h"
 
 #include <cstdint>
 #include <cstdlib>
@@ -22,7 +23,7 @@ Rom::Rom(int seed) : items(number_of_items) {
     rng = std::mt19937(seed);
 }
 
-void Rom::run() {
+void Rom::run(std::vector<RandomizationOptions> &randomization_options) {
     populate_character_mapping_no_load();
     populate_pokemon();
     populate_items();
@@ -30,19 +31,64 @@ void Rom::run() {
 
     // TODO: Override trade evolving pokemon
     // TODO: Add flags for each option
-    randomize_intro_pokemon();
-    randomize_starters(); // TODO: Allow choosing of starters
-    randomize_land_encounters(land_offset_johto);
-    randomize_land_encounters(land_offset_kanto);
-    randomize_water_encounters(water_offset_johto);
-    randomize_water_encounters(water_offset_kanto);
-    randomize_fishing_encounters();
-    randomize_trainers();
-    randomize_gift_pokemon();
-    randomize_static_pokemon();
-    randomize_game_corner_pokemon();
-    randomize_evolutions();
-    randomize_static_item_locations();
+
+
+    if (randomization_options.size() == 0) {
+	    randomize_intro_pokemon();
+	    randomize_starters(); // TODO: Allow choosing of starters
+	    randomize_land_encounters(land_offset_johto);
+	    randomize_land_encounters(land_offset_kanto);
+	    randomize_water_encounters(water_offset_johto);
+	    randomize_water_encounters(water_offset_kanto);
+	    randomize_fishing_encounters();
+	    randomize_trainers();
+	    randomize_gift_pokemon();
+	    randomize_static_pokemon();
+	    randomize_game_corner_pokemon();
+	    randomize_evolutions();
+	    randomize_static_item_locations();
+    } else {
+    	    // Not the most efficient, but the sun will still rise
+    	    for (auto option: randomization_options) {
+		if (option == RANDOMIZE_INTRO_POKEMON) {
+			randomize_intro_pokemon();
+		}
+		if (option == RANDOMIZE_STARTER_POKEMON) {
+			randomize_starters();
+		}
+		if (option == RANDOMIZE_WILD_POKEMON) {
+			randomize_land_encounters(land_offset_johto);
+			randomize_land_encounters(land_offset_kanto);
+			randomize_water_encounters(water_offset_johto);
+			randomize_water_encounters(water_offset_kanto);
+			randomize_fishing_encounters();
+		}
+		if (option == RANDOMIZE_TRAINERS) {
+			randomize_trainers();
+		}
+		if (option == RANDOMIZE_GIFT_POKEMON) {
+			randomize_gift_pokemon();
+		}
+		if (option == RANDOMIZE_STATIC_POKEMON) {
+			randomize_static_pokemon();
+		}
+		if (option == RANDOMIZE_GAME_CORNER_POKEMON) {
+			randomize_game_corner_pokemon();
+		}
+		if (option == RANDOMIZE_EVOLUTIONS) {
+			randomize_evolutions();
+		}
+		if (option == RANDOMIZE_STATIC_ITEMS) {
+			randomize_static_item_locations();
+		}
+		if (option == ENABLE_SHINY_MODE) {
+			enable_shiny_mode();
+		}
+		if (option == RANDOMIZE_POKEMON_PALLETES) {
+			randomize_pokemon_palettes();
+		}
+    	    }
+    }
     // TODO: Randomize trade pokemon
 //    shuffle_stats(); // TODO: Add flag for this
 }
