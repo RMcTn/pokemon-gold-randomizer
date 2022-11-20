@@ -1010,7 +1010,7 @@ std::vector<Item> Rom::load_banned_items() {
                 //         << " is too large. Max is " << UINT8_MAX;
 		// std::cerr << err_msg << "\n";
 		// std::cerr << "Falling back on default banned item list\n";
-		printf("ID %d at line number %d in %s is too large. Max is %d\n", line, line_number, filename, UINT8_MAX);
+		printf("ID %s at line number %d in %s is too large. Max is %d\n", line.c_str(), line_number, filename.c_str(), UINT8_MAX);
 		return default_banned_items;
             }
             banned_items.push_back(items.get_item(item_id));
