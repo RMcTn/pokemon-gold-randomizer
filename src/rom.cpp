@@ -388,8 +388,9 @@ bool Rom::load(const std::string &romFilename) {
     return true;
 }
 
-bool Rom::save() {
-    file.open("gold randomized.gbc", std::ios::out | std::ios::binary);
+bool Rom::save(std::string filename_to_save) {
+    if (filename_to_save.empty()) filename_to_save = "gold randomized.gbc";
+    file.open(filename_to_save, std::ios::out | std::ios::binary);
     if (!file.is_open()) return false;
     file.write((char *) &rom[0], sizeof(uint8_t) * rom.size());
     file.close();

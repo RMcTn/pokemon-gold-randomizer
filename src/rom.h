@@ -42,7 +42,7 @@ public:
 
     bool load(const std::string &romFilename);
 
-    bool save();
+    bool save(std::string filename_to_save);
 
     void run(std::vector<RandomizationOptions> &randomization_options);    //Just a driver function whilst functionality is being built
 
